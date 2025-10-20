@@ -11,9 +11,10 @@ using WindowsFormsApp1.Models;
 
 namespace WindowsFormsApp1.Services
 {
-    public class PlcOperation
+    public class PlcOperation : IDisposable
     {
         private SerialPortStream _serial;
+        private string _configuredPortName; // <— simpan nama port di sini
         private readonly StringBuilder _rxBuffer = new StringBuilder();
         private int _lineStart;
         private readonly Stopwatch _cycleStopwatch = new Stopwatch();
@@ -31,6 +32,7 @@ namespace WindowsFormsApp1.Services
 
         private void InitializeSerial(string portName, int baudRate, int dataBits, Parity parity, StopBits stopBits)
         {
+            _configuredPortName = portName; // <— simpan
             _serial = new SerialPortStream(portName, baudRate, dataBits, parity, stopBits)
             {
                 NewLine = "\r",
@@ -39,32 +41,72 @@ namespace WindowsFormsApp1.Services
             };
         }
 
-        public void SetConfig(
-            string portName = null,
-            int? baudRate = null
-        )
+        /// <summary>
+        /// Cek apakah device/port yang dikonfigurasi tersedia di sistem.
+        /// </summary>
+        public bool DeviceExists()
         {
-            bool wasOpen = _serial.IsOpen;
-            if (wasOpen) _serial.Close();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_configuredPortName)) return false;
 
-            // Update konfigurasi serial
-            if (!string.IsNullOrEmpty(portName)) _serial.PortName = portName;
+                string[] ports = System.IO.Ports.SerialPort.GetPortNames();
+                return ports.Any(p => string.Equals(p, _configuredPortName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public void SetConfig(string portName = null, int? baudRate = null)
+        {
+            bool wasOpen = _serial?.IsOpen == true;
+            if (wasOpen)
+            {
+                try { _serial.Close(); } catch { /* ignore */ }
+            }
+
+            if (!string.IsNullOrEmpty(portName))
+            {
+                _configuredPortName = portName;  // <— sinkronkan field
+                _serial.PortName = portName;
+            }
             if (baudRate.HasValue) _serial.BaudRate = baudRate.Value;
         }
 
         /* ---------------  open / close  --------------- */
+        /// <summary>
+        /// Buka hanya jika device ada. Kalau tidak ada, aplikasi tetap jalan tanpa exception.
+        /// </summary>
         public void Open()
         {
+            // Skip jika device/port tidak terdeteksi
+            if (!DeviceExists())
+            {
+                Debug.WriteLine($"[PLC] Port '{_configuredPortName}' tidak ditemukan. Skip open().");
+                return;
+            }
+
+            if (_serial == null) throw new InvalidOperationException("Serial belum diinisialisasi.");
+
             if (!_serial.IsOpen)
             {
                 _serial.Open();
-                _ = Task.Run(ReadPumpAsync); // <— polling tanpa event
+                _ = Task.Run(ReadPumpAsync); // polling tanpa event
             }
         }
 
-        public void Close() => _serial.Close();
+        public void Close()
+        {
+            try
+            {
+                if (_serial?.IsOpen == true) _serial.Close();
+            }
+            catch { /* ignore */ }
+        }
 
-        public bool IsOpen => _serial.IsOpen;
+        public bool IsOpen => _serial?.IsOpen == true;
 
         public void SendCommand(byte[] command)
         {
@@ -86,22 +128,24 @@ namespace WindowsFormsApp1.Services
 
                 SendCommand(WritePLCAddress.READ);
 
-                using (var cts = new CancellationTokenSource(timeoutMs)){
-                try
+                using (var cts = new CancellationTokenSource(timeoutMs))
                 {
-                    while (_waitingResponse && !cts.IsCancellationRequested)
-                        await Task.Delay(10, cts.Token);
-                }
+                    try
+                    {
+                        while (_waitingResponse && !cts.IsCancellationRequested)
+                            await Task.Delay(10, cts.Token);
+                    }
                     catch (OperationCanceledException) { /* timeout */ }
-                };
+                }
 
                 _cycleStopwatch.Stop();
 
-                times.Add(_waitingResponse ? timeoutMs          // timeout
-                                           : _cycleStopwatch.Elapsed.TotalMilliseconds);
+                times.Add(_waitingResponse
+                    ? timeoutMs // timeout
+                    : _cycleStopwatch.Elapsed.TotalMilliseconds);
 
                 _waitingResponse = false;
-                await Task.Delay(200); // antar loop
+                await Task.Delay(200); // jeda antar loop
             }
 
             double avg = times.Count == 0 ? 0 : times.Average();
@@ -127,13 +171,20 @@ namespace WindowsFormsApp1.Services
         private async Task ReadPumpAsync()
         {
             var buf = new byte[4096];
-            while (IsOpen)
+            try
             {
-                int read = await _serial.ReadAsync(buf, 0, buf.Length);
-                if (read == 0) break;
+                while (IsOpen)
+                {
+                    int read = await _serial.ReadAsync(buf, 0, buf.Length);
+                    if (read == 0) break;
 
-                string chunk = Encoding.ASCII.GetString(buf, 0, read);
-                ParseChunk(chunk);
+                    string chunk = Encoding.ASCII.GetString(buf, 0, read);
+                    ParseChunk(chunk);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[PLC] ReadPumpAsync error: {ex.Message}");
             }
         }
 

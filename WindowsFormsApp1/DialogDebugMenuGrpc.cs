@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WindowsFormsApp1.Helpers;
 using static WindowsFormsApp1.VideoGrabber;
 
 namespace WindowsFormsApp1
@@ -20,6 +21,8 @@ namespace WindowsFormsApp1
         public ImageResponse apiResponse = new ImageResponse();
         public VideoGrabber grabber = VideoGrabberService.Instance;
         private static string videoPath;
+        private static string photoPath;
+        private readonly ImageGrabber _imageGrabber = new ImageGrabber();
 
         public DialogDebugMenuGrpc()
         {
@@ -423,6 +426,38 @@ namespace WindowsFormsApp1
                     "Stream Dummy Images",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
+            }
+        }
+
+        private void setPhotoBtn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.Title = "Pilih File Photo";
+                    openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                    if (openFileDialog.ShowDialog(this) != DialogResult.OK)
+                        return; // User batal pilih file
+
+                    photoPath = openFileDialog.FileName;
+
+                    if (!File.Exists(photoPath))
+                    {
+                        MessageBox.Show($"File tidak ditemukan: {photoPath}");
+                        return;
+                    }
+                    Console.WriteLine(photoPath);
+
+                    _imageGrabber.SetImagePath(photoPath);
+                    _imageGrabber.Start();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Gagal update videoPath:\r\n{ex.Message}");
             }
         }
     }

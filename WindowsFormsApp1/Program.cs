@@ -27,15 +27,39 @@ namespace AutoInspectionPlatform
 
             SettingsOperation = new SettingsOperation(DbConnection);
 
-            PlcHelper = new PlcOperation(SettingsOperation.GetSetting<string>("plc", "serial_port"), SettingsOperation.GetSetting<int>("plc", "baud_rate"));
-
-            if (PlcHelper.IsOpen)
+            try
             {
-                PlcHelper.Close();
+                string plcPort = SettingsOperation.GetSetting<string>("plc", "serial_port");
+                int baudRate = SettingsOperation.GetSetting<int>("plc", "baud_rate");
+
+                // Cek apakah setting PLC valid
+                if (!string.IsNullOrWhiteSpace(plcPort) && baudRate > 0)
+                {
+                    PlcHelper = new PlcOperation(plcPort, baudRate);
+
+                    // Coba tes koneksi ringan tanpa langsung Open()
+                    if (PlcHelper.DeviceExists())
+                    {
+                        PlcHelper.Open();
+                        Console.WriteLine("PLC terhubung dan berhasil dibuka.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("PLC tidak terdeteksi, aplikasi akan tetap berjalan tanpa PLC.");
+                        PlcHelper = null;
+                    }
+                }
+                else
+                {
+                    PlcHelper = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Gagal inisialisasi PLC: {ex.Message}");
+                PlcHelper = null;
             }
 
-            // Buat instance baru (atau reuse) dan buka
-            PlcHelper.Open();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

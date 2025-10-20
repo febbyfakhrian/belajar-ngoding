@@ -230,33 +230,32 @@ namespace WindowsFormsApp1
                         conv.enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
                         _cam.MV_CC_ConvertPixelType_NET(ref conv);
 
-                        // Build JPEG with Skia (safe using)
-                        byte[] jpeg;
+                        byte[] bmp;
                         try
                         {
-                            jpeg = BuildJpegFrame(_annotatedBuf, w, h);
+                            bmp = BuildBmpFrame(_annotatedBuf, w, h);
                         }
                         catch (Exception exEnc)
                         {
                             Console.WriteLine($"[Camera] JPEG encode error: {exEnc.Message}");
-                            jpeg = Array.Empty<byte>();
+                            bmp = Array.Empty<byte>();
                         }
 
                         // enqueue & preview
-                        if (jpeg.Length > 0)
+                        if (bmp.Length > 0)
                         {
                             if (Queue.Count >= _maxQueue) Queue.TryDequeue(out _);
-                            Queue.Enqueue(jpeg);
+                            Queue.Enqueue(bmp);
 
                             // Use using so GDI+ resources are freed quickly
-                            using (var ms = new MemoryStream(jpeg))
-                            using (var bmp = new Bitmap(ms))
+                            using (var ms = new MemoryStream(bmp))
+                            using (var bmpFrame = new Bitmap(ms))
                             {
-                                FramePreview?.Invoke((Bitmap)bmp.Clone());
+                                FramePreview?.Invoke((Bitmap)bmpFrame.Clone());
                             }
 
-                            FrameEncoded?.Invoke(jpeg);
-                            FrameReadyForGrpc?.Invoke(jpeg);
+                            FrameEncoded?.Invoke(bmp);
+                            FrameReadyForGrpc?.Invoke(bmp);
                         }
 
                         // Display using SDK (best effort)
@@ -285,7 +284,7 @@ namespace WindowsFormsApp1
             }
         }
 
-        private byte[] BuildJpegFrame(IntPtr rgbPtr, int width, int height)
+        private byte[] BuildBmpFrame(IntPtr rgbPtr, int width, int height)
         {
             if (rgbPtr == IntPtr.Zero || width <= 0 || height <= 0)
                 return null;
@@ -300,13 +299,13 @@ namespace WindowsFormsApp1
                     Cv2.CvtColor(mat, bgr, ColorConversionCodes.RGB2BGR);
 
                     // Encode hasil ke JPEG (tanpa bounding box)
-                    Cv2.ImEncode(".bmp", bgr, out byte[] jpegData);
-                    return jpegData;
+                    Cv2.ImEncode(".bmp", bgr, out byte[] bmpData);
+                    return bmpData;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BuildJpegFrame] Error: {ex.Message}");
+                Console.WriteLine($"[BuildBmpFrame] Error: {ex.Message}");
                 return null;
             }
         }

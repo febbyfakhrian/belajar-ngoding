@@ -35,6 +35,7 @@
             this.sendVideoFrameBtn = new ReaLTaiizor.Controls.Button();
             this.setVideoBtn = new ReaLTaiizor.Controls.Button();
             this.sendVideoFrameStreamBtn = new ReaLTaiizor.Controls.Button();
+            this.setPhotoBtn = new ReaLTaiizor.Controls.Button();
             this.SuspendLayout();
             // 
             // testConnectionBtn
@@ -132,7 +133,7 @@
             this.sendVideoFrameBtn.Image = null;
             this.sendVideoFrameBtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.sendVideoFrameBtn.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.sendVideoFrameBtn.Location = new System.Drawing.Point(224, 76);
+            this.sendVideoFrameBtn.Location = new System.Drawing.Point(224, 133);
             this.sendVideoFrameBtn.Name = "sendVideoFrameBtn";
             this.sendVideoFrameBtn.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.sendVideoFrameBtn.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -174,7 +175,7 @@
             this.sendVideoFrameStreamBtn.Image = null;
             this.sendVideoFrameStreamBtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.sendVideoFrameStreamBtn.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.sendVideoFrameStreamBtn.Location = new System.Drawing.Point(224, 133);
+            this.sendVideoFrameStreamBtn.Location = new System.Drawing.Point(224, 181);
             this.sendVideoFrameStreamBtn.Name = "sendVideoFrameStreamBtn";
             this.sendVideoFrameStreamBtn.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.sendVideoFrameStreamBtn.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -184,11 +185,34 @@
             this.sendVideoFrameStreamBtn.TextAlignment = System.Drawing.StringAlignment.Center;
             this.sendVideoFrameStreamBtn.Click += new System.EventHandler(this.sendVideoFrameStreamBtn_Click);
             // 
+            // setPhotoBtn
+            // 
+            this.setPhotoBtn.BackColor = System.Drawing.Color.Transparent;
+            this.setPhotoBtn.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.setPhotoBtn.EnteredBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.EnteredColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.setPhotoBtn.Image = null;
+            this.setPhotoBtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.setPhotoBtn.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.Location = new System.Drawing.Point(224, 67);
+            this.setPhotoBtn.Name = "setPhotoBtn";
+            this.setPhotoBtn.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.setPhotoBtn.Size = new System.Drawing.Size(120, 40);
+            this.setPhotoBtn.TabIndex = 7;
+            this.setPhotoBtn.Text = "Set Photo";
+            this.setPhotoBtn.TextAlignment = System.Drawing.StringAlignment.Center;
+            this.setPhotoBtn.Visible = false;
+            this.setPhotoBtn.Click += new System.EventHandler(this.setPhotoBtn_Click);
+            // 
             // DialogDebugMenuGrpc
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(362, 262);
+            this.Controls.Add(this.setPhotoBtn);
             this.Controls.Add(this.sendVideoFrameStreamBtn);
             this.Controls.Add(this.setVideoBtn);
             this.Controls.Add(this.sendVideoFrameBtn);
@@ -212,5 +236,6 @@
         private ReaLTaiizor.Controls.Button sendVideoFrameBtn;
         private ReaLTaiizor.Controls.Button setVideoBtn;
         private ReaLTaiizor.Controls.Button sendVideoFrameStreamBtn;
+        private ReaLTaiizor.Controls.Button setPhotoBtn;
     }
 }

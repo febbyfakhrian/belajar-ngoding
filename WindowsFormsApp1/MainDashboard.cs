@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -63,6 +64,7 @@ namespace WindowsFormsApp1
         private FileUtils fileUtils = new FileUtils();
         private ImageDbOperation _imageDbOperation => Program.DbHelper;
         private ImageManipulationUtils imageManipulationUtils = new ImageManipulationUtils();
+        private readonly ImageGrabber _grabber = new ImageGrabber();
 
         private static int indexFrame = 0;
 
@@ -98,6 +100,7 @@ namespace WindowsFormsApp1
             //        }
             //    }
             //};
+            _grabber.FramePreview += OnFramePreview;
 
             _grpc.OnDisconnected += ScheduleReconnect;
             _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS)
@@ -245,6 +248,20 @@ namespace WindowsFormsApp1
             }
 
             return strUserDefinedName;
+        }
+        
+        public void OnFramePreview(Bitmap bmp)
+        {
+            // Because PictureBox belongs to the UI thread, 
+            // you must use Invoke() when updating from another thread
+            if (pictureBox5.InvokeRequired)
+            {
+                pictureBox5.Invoke(new Action(() => pictureBox5.Image = bmp));
+            }
+            else
+            {
+                pictureBox5.Image = bmp;
+            }
         }
 
         private void DeviceListAcq()
@@ -627,22 +644,22 @@ namespace WindowsFormsApp1
             else
             {
                 if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
-                {
-                    ShowErrorMsg("No device, please select", 0);
-                    return;
-                }
-
-                var device = (MyCamera.MV_CC_DEVICE_INFO)
-                    Marshal.PtrToStructure(_deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
-                                           typeof(MyCamera.MV_CC_DEVICE_INFO));
-                if (!_cam.Open(device))
-                {
-                    ShowErrorMsg("Failed to open device", 0);
-                }
-
-                _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+            {
+                ShowErrorMsg("No device, please select", 0);
+                return;
             }
 
+            var device = (MyCamera.MV_CC_DEVICE_INFO)
+                Marshal.PtrToStructure(_deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
+                                       typeof(MyCamera.MV_CC_DEVICE_INFO));
+            if (!_cam.Open(device))
+            {
+                ShowErrorMsg("Failed to open device", 0);
+            }
+
+            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+
+            }
         }
 
         private void UpdateUIV2(byte[] jpegBytes, string text)
@@ -691,7 +708,6 @@ namespace WindowsFormsApp1
         {
             PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(() =>
             {
-                Console.WriteLine(lineRaw);
                 if (string.IsNullOrWhiteSpace(lineRaw)) return;
 
                 // normalisasi: hapus control-char, trim, upper
@@ -722,32 +738,58 @@ namespace WindowsFormsApp1
 
         private async void inspectFrame()
         {
-            do
+            // for looping inspection
+            //do
+            //{
+            //    var tcs = new TaskCompletionSource<byte[]>();
+
+            //    _cam.FrameReadyForGrpc += bmp =>
+            //    {
+            //        if (bmp != null && bmp.Length > 0)
+            //            tcs.TrySetResult(bmp);
+            //    };
+
+            //    // Tunggu sampai event menghasilkan frame
+            //    byte[] frameBytes = await tcs.Task;
+            //    string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            //    string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
+
+            //    await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
+            //    _imageDbOperation.InsertImage(fileNameFormat, imageId);
+
+            //    // Kirim lewat gRPC
+            //    ImageResponse resp = await _grpc.ProcessImageAsync(frameBytes, default, imageId);
+
+            //    //var resultJson = JsonConvert.DeserializeObject<Root>(resp.Result);
+            //    RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
+            //} while (indexFrame < 6);
+
+            var tcs = new TaskCompletionSource<byte[]>();
+
+            _cam.FrameReadyForGrpc += bmp =>
             {
-                var tcs = new TaskCompletionSource<byte[]>();
+                if (bmp != null && bmp.Length > 0)
+                    tcs.TrySetResult(bmp);
+            };
 
-                _cam.FrameReadyForGrpc += bmp =>
-                {
-                    if (bmp != null && bmp.Length > 0)
-                        tcs.TrySetResult(bmp);
-                };
+            // Tunggu sampai event menghasilkan frame
+            byte[] frameBytes = await tcs.Task;
+            string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
 
-                // Tunggu sampai event menghasilkan frame
-                byte[] frameBytes = await tcs.Task;
-                string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-                string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
+            await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
+            _imageDbOperation.InsertImage(fileNameFormat, imageId);
 
-                await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
-                _imageDbOperation.InsertImage(fileNameFormat, imageId);
+            // Kirim lewat gRPC
+            ImageResponse resp = await _grpc.ProcessImageAsync(frameBytes, default, imageId);
 
-                // Kirim lewat gRPC
-                ImageResponse resp = await _grpc.ProcessImageAsync(frameBytes, default, imageId);
+            //var resultJson = JsonConvert.DeserializeObject<Root>(resp.Result);
+            RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
 
-                //var resultJson = JsonConvert.DeserializeObject<Root>(resp.Result);
-                RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
-            } while (indexFrame < 6);
-
-            MoveToFrame();
+            if (!isDebug.Checked)
+            {
+                MoveToFrame();
+            }
 
             return;
         }
@@ -773,7 +815,10 @@ namespace WindowsFormsApp1
             pictureBox5.Visible = false;
             labelCameraInspection.Visible = false;
 
-            handleSignalFromPLC();
+            if (!isDebug.Checked)
+            {
+                handleSignalFromPLC();
+            }
 
             if (MyCamera.MV_OK != nRet)
             {
@@ -889,7 +934,7 @@ namespace WindowsFormsApp1
             Root result = JsonConvert.DeserializeObject<Root>(json);
             if (result?.Components == null) return;
 
-            indexFrame = result.StepIndex;
+            //indexFrame = result.StepIndex;
 
             if (!_uiBuilt)
             {
@@ -1260,6 +1305,18 @@ namespace WindowsFormsApp1
             var plcDialog = new PlcDialog();
 
             plcDialog.Show();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+                inspectFrame();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            var workflowForm = new WorkflowForm();
+
+            workflowForm.Show();
         }
     }
 }

@@ -30,7 +30,13 @@ namespace WindowsFormsApp1
 
             try
             {
-                _channel = new Channel(_host, ChannelCredentials.Insecure);
+
+                var options = new List<ChannelOption>
+                {
+                    new ChannelOption(ChannelOptions.MaxSendMessageLength, 100 * 1024 * 1024), // 100 MB
+                    new ChannelOption(ChannelOptions.MaxReceiveMessageLength, 100 * 1024 * 1024)
+                };
+                _channel = new Channel(_host, ChannelCredentials.Insecure, options);
                 await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(5)); // Wait until channel is ready
                 _client = new AutoInspect.AutoInspectClient(_channel);
                 Console.WriteLine("[Grpc] Connection SUCCESS.");
