@@ -112,5 +112,44 @@ namespace WindowsFormsApp1.Helpers
                 return BitmapConverter.ToBitmap(mat);
             }
         }
+
+        public Bitmap CropAndDrawBoundingBoxes(Bitmap src, List<int> boxes, Scalar? color = null, int strokeWidth = 5)
+        {
+            if (src == null) throw new ArgumentNullException(nameof(src));
+            if (boxes == null || boxes.Count % 4 != 0) throw new ArgumentException("List boxes harus kelipatan 4 (x1, y1, x2, y2)");
+
+            Scalar drawColor = color ?? new Scalar(0, 255, 0); // Default hijau
+
+            using (Mat mat = BitmapConverter.ToMat(src))
+            {
+                int srcW = mat.Width;
+                int srcH = mat.Height;
+
+                int x1 = Math.Max(0, boxes[0]);
+                int y1 = Math.Max(0, boxes[1]);
+                int x2 = Math.Min(srcW, boxes[2]);
+                int y2 = Math.Min(srcH, boxes[3]);
+
+                int w = x2 - x1;
+                int h = y2 - y1;
+
+                // --- Gambar bounding box ---
+                Cv2.Rectangle(mat,
+                              new OpenCvSharp.Point(x1, y1),
+                              new OpenCvSharp.Point(x2, y2),
+                              drawColor,
+                              strokeWidth,
+                              LineTypes.AntiAlias);
+
+                // --- Crop bagian gambar ---
+                Rect roi = new Rect(x1, y1, w, h);
+                using (Mat croppedMat = new Mat(mat, roi))
+                {
+                    Bitmap croppedBmp = BitmapConverter.ToBitmap(croppedMat);
+
+                    return croppedBmp;
+                }
+            }
+        }
     }
 }

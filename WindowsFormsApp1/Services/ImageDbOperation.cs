@@ -48,6 +48,18 @@ namespace WindowsFormsApp1.Services
             }
         }
 
+        public string GetLatestImageById()
+        {
+            using (var cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT file_name FROM images order by id DESC LIMIT 1;";
+
+                var result = cmd.ExecuteScalar();
+
+                return result?.ToString();
+            }
+        }
+
         /// <summary>
         /// Buat tabel images kalau belum ada
         /// </summary>

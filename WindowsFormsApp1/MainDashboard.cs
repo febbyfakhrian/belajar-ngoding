@@ -706,7 +706,7 @@ namespace WindowsFormsApp1
 
         private void handleSignalFromPLC()
         {
-            PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(() =>
+            PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(async () =>
             {
                 if (string.IsNullOrWhiteSpace(lineRaw)) return;
 
@@ -717,7 +717,23 @@ namespace WindowsFormsApp1
 
                 if (cmd.ToUpper().Equals(lineClean.ToUpper(), StringComparison.Ordinal))
                 {
-                    inspectFrame();
+                    var tcs = new TaskCompletionSource<byte[]>();
+
+                    _cam.FrameReadyForGrpc += bmp =>
+                    {
+                        if (bmp != null && bmp.Length > 0)
+                            tcs.TrySetResult(bmp);
+                    };
+
+                    // Tunggu sampai event menghasilkan frame
+                    byte[] frameBytes = await tcs.Task;
+                    string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+                    string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
+
+                    await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
+                    _imageDbOperation.InsertImage(fileNameFormat, imageId);
+
+                    inspectFrame(frameBytes, imageId);
                 }
             }));
         }
@@ -736,7 +752,7 @@ namespace WindowsFormsApp1
             }
         }
 
-        private async void inspectFrame()
+        private async void inspectFrame(byte[] frameBytes, string imageId)
         {
             // for looping inspection
             //do
@@ -764,24 +780,8 @@ namespace WindowsFormsApp1
             //    RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
             //} while (indexFrame < 6);
 
-            var tcs = new TaskCompletionSource<byte[]>();
-
-            _cam.FrameReadyForGrpc += bmp =>
-            {
-                if (bmp != null && bmp.Length > 0)
-                    tcs.TrySetResult(bmp);
-            };
-
-            // Tunggu sampai event menghasilkan frame
-            byte[] frameBytes = await tcs.Task;
-            string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
-
-            await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
-            _imageDbOperation.InsertImage(fileNameFormat, imageId);
-
             // Kirim lewat gRPC
-            ImageResponse resp = await _grpc.ProcessImageAsync(frameBytes, default, imageId);
+            await _grpc.ProcessImageAsync(frameBytes, default, imageId);
 
             //var resultJson = JsonConvert.DeserializeObject<Root>(resp.Result);
             RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
@@ -936,15 +936,14 @@ namespace WindowsFormsApp1
 
             //indexFrame = result.StepIndex;
 
-            if (!_uiBuilt)
+            if (componentResultInspectionRadioButton.Checked)
             {
-                BuildUiFirstTime(result, flowLayoutPanel1);
-                _uiBuilt = true;
-
-                UpdateUiInspectionResult(result, flowLayoutPanel1);
+                BuildUiFirstTimeComponentInspection(result, flowLayoutPanel1);
+                UpdateUiInspectionResultComponentInspection(result, flowLayoutPanel1);
             }
             else
             {
+                BuildUiFirstTime(result, flowLayoutPanel1);
                 UpdateUiInspectionResult(result, flowLayoutPanel1);
             }
         }
@@ -984,7 +983,7 @@ namespace WindowsFormsApp1
                 var item = kv.Value.FirstOrDefault();
                 if (item == null) continue;
 
-                var fileImage = fileUtils.FindById(item.ImageId);
+                var fileImage = fileUtils.GetLatestImage();
 
                 if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage))
                 {
@@ -995,17 +994,15 @@ namespace WindowsFormsApp1
                 /*---------- Gambar + Bounding Box ----------*/
                 byte[] fileImageBytes = File.ReadAllBytes(fileImage);
                 Bitmap srcBmp;
-                Bitmap boxed;
+                Bitmap boxed = null;
+                var allBoxes = new List<int>();
                 using (var ms = new MemoryStream(fileImageBytes))
                     srcBmp = new Bitmap(ms);   // bitmap independen
-
-                // Inisialisasi supaya pasti punya nilai
-                var allBoxes = new List<int>();
 
                 foreach (var value in kv.Value)
                 {
                     if (value.Boxes != null && value.Boxes.Count % 4 == 0)
-                        allBoxes.AddRange(value.Boxes);   // gabung semua
+                        allBoxes.AddRange(value.Boxes);  
                 }
 
                 if (allBoxes.Count > 0)
@@ -1013,20 +1010,20 @@ namespace WindowsFormsApp1
                     try
                     {
                         boxed = imageManipulationUtils.DrawBoundingBoxMultiple(srcBmp, allBoxes);
-                        // 3. Pakai hasil gambar
-                        imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
-                        imgBox.Margin = new Padding(0);
-                        imgBox.Image = boxed;
-                        innerTable.RowCount = 1;
-
-                        // 4. Bersihkan bitmap sumber (optional)
-                        srcBmp.Dispose();
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"[DrawBoxes] Error: {ex.Message}");
                     }
                 }
+
+                imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                imgBox.Margin = new Padding(0);
+                imgBox.Image = boxed;
+                innerTable.RowCount = 1;
+
+                // 4. Bersihkan bitmap sumber (optional)
+                srcBmp.Dispose();
 
                 /*---------- Label & Warna ----------*/
                 resultLbl.Text = item.Label ? "NG" : "Good";
@@ -1069,6 +1066,215 @@ namespace WindowsFormsApp1
             parent.ResumeLayout(true); // 2. terapkan semua perubahan sekaligus
         }
 
+        void UpdateUiInspectionResultComponentInspection(Root data, Control parent)
+        {
+            if (data?.Components == null) return;
+
+            parent.SuspendLayout(); // 1. cegah redraw intermediate
+            int index = 1;
+
+            foreach (var kv in data.Components)
+            {
+                foreach (var value in kv.Value)
+                {
+                    int key = index;
+
+                    var imgBox = parent.Controls.Find($"imgBox_{key}", true).FirstOrDefault() as PictureBox;
+                    var resultLbl = parent.Controls.Find($"resultLbl_{key}", true).FirstOrDefault() as Label;
+                    var parrot = parent.Controls.Find($"parrot_{key}", true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
+                    var innerTable = parent.Controls.Find($"innerTable_{key}", true).FirstOrDefault() as TableLayoutPanel;
+
+                    if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
+
+                    var item = kv.Value.FirstOrDefault();
+                    if (item == null) continue;
+
+                    var fileImage = fileUtils.GetLatestImage();
+
+                    if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage))
+                    {
+                        Console.WriteLine($"[LoadImage] File belum ada: {item.ImageId}");
+                        return;
+                    }
+
+                    /*---------- Gambar + Bounding Box ----------*/
+                    byte[] fileImageBytes = File.ReadAllBytes(fileImage);
+                    Bitmap srcBmp;
+                    Bitmap boxed = null; // <- inisialisasi dulu
+                    var allBoxes = new List<int>();
+                    using (var ms = new MemoryStream(fileImageBytes))
+                        srcBmp = new Bitmap(ms);   // bitmap independen
+
+                    boxed = imageManipulationUtils.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
+
+                    imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                    imgBox.Margin = new Padding(0);
+                    imgBox.Image = boxed;
+                    innerTable.RowCount = 1;
+
+                    // 4. Bersihkan bitmap sumber (optional)
+                    srcBmp.Dispose();
+
+                    /*---------- Label & Warna ----------*/
+                    resultLbl.Text = item.Label ? "NG" : "Good";
+                    parrot.BackColor = !item.Label ? Color.FromArgb(4, 194, 55)
+                                                  : Color.FromArgb(192, 0, 0);
+
+                    /*---------- Sembunyikan dummy label (sekali saja) ----------*/
+                    var dummy = innerTable.Controls.OfType<Label>()
+                                         .FirstOrDefault(l => l.Text == "Result Inspection");
+                    if (dummy != null && dummy.Visible) dummy.Visible = false;
+
+                    /*---------- Value Label: create once, update text ----------*/
+                    var valLbl = innerTable.Controls.OfType<Label>()
+                                          .FirstOrDefault(l => l.Name == $"valLbl_{key}");
+                    if (string.IsNullOrEmpty(item.Value))
+                    {
+                        if (valLbl != null) valLbl.Visible = false;
+                    }
+                    else
+                    {
+                        if (valLbl == null)
+                        {
+                            valLbl = new Label
+                            {
+                                Name = $"valLbl_{key}",
+                                ForeColor = Color.White,
+                                AutoSize = true
+                            };
+                            innerTable.Controls.Add(valLbl);
+                        }
+                        valLbl.Text = $"Value: {item.Value}";
+                        valLbl.Visible = true;
+                    }
+
+                    index++;
+                }
+
+            }
+
+            /*---------- Final Label ----------*/
+            var final = parent.Controls.Find("finalLabel", true).FirstOrDefault() as Label;
+            if (final != null) final.Text = $"Final Label: {data.FinalLabel}";
+
+            parent.ResumeLayout(true); // 2. terapkan semua perubahan sekaligus
+        }
+
+        void BuildUiFirstTimeComponentInspection(Root data, FlowLayoutPanel parent)
+        {
+            parent.Controls.Clear(); // boleh, karena memang pertama kali
+            int index = 1;
+            foreach (var kv in data.Components)
+            {
+                foreach (var value in kv.Value)
+                {
+                    int key = index;
+
+                    var panel = new Panel
+                    {
+                        Name = $"panel_{key}",
+                        Size = new System.Drawing.Size(185, 186),
+                        BackColor = Color.Transparent,
+                        Margin = new Padding(0, 0, 20, 20)
+                    };
+
+                    var outerTable = new TableLayoutPanel
+                    {
+                        ColumnCount = 1,
+                        RowCount = 2,
+                        Dock = DockStyle.Fill,
+                        Padding = new Padding(5),
+                        BackColor = Color.FromArgb(117, 120, 123)
+                    };
+                    outerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 82.38636F));
+                    outerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 17.61364F));
+                    outerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 169F));
+                    panel.Controls.Add(outerTable);
+
+                    var innerTable = new TableLayoutPanel
+                    {
+                        Name = $"innerTable_{key}",
+                        ColumnCount = 1,
+                        RowCount = 2,
+                        Dock = DockStyle.Fill,
+                        BackColor = Color.Black
+                    };
+                    innerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 75F));
+                    innerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+
+                    var imgBox = new PictureBox
+                    {
+                        Name = $"imgBox_{key}",        // <— penting untuk update
+                        Dock = DockStyle.Fill,
+                        SizeMode = PictureBoxSizeMode.Zoom,
+                        Image = Properties.Resources.NoImage
+                    };
+                    innerTable.Controls.Add(imgBox, 0, 0);
+
+                    var labelDummy = new Label
+                    {
+                        Text = "Result Inspection",
+                        ForeColor = Color.White,
+                        Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold),
+                        Anchor = AnchorStyles.None,
+                        AutoSize = true
+                    };
+                    innerTable.Controls.Add(labelDummy, 0, 1);
+
+                    outerTable.Controls.Add(innerTable, 0, 0);
+
+                    var parrotPanel = new ReaLTaiizor.Controls.ParrotWidgetPanel
+                    {
+                        Name = $"parrot_{key}",        // <— penting untuk update
+                        Dock = DockStyle.Fill,
+                        BackColor = Color.FromArgb(192, 0, 0),
+                        ControlsAsWidgets = false
+                    };
+                    outerTable.Controls.Add(parrotPanel, 0, 1);
+
+                    // === Result Table di ParrotWidgetPanel ===
+                    var resultTable = new TableLayoutPanel
+                    {
+                        ColumnCount = 1,
+                        RowCount = 1,
+                        Dock = DockStyle.Fill,
+                        Location = new System.Drawing.Point(0, 0),
+                        Size = new System.Drawing.Size(169, 26),
+                        AutoSize = false
+                    };
+                    resultTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+                    resultTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 20F));
+                    resultTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+                    parrotPanel.Controls.Add(resultTable);
+
+                    #region 7. Result label di dalam parrotPanel
+                    var resultLabel = new Label
+                    {
+                        Name = $"resultLbl_{key}",     // <— penting untuk update
+                        Text = "Result Inspection",
+                        Dock = DockStyle.Fill,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                        TextAlign = ContentAlignment.MiddleCenter
+                    };
+                    resultTable.Controls.Add(resultLabel);
+                    #endregion
+
+                    parent.Controls.Add(panel);
+                    index++;
+                }
+
+                var finalLabel = new Label
+                {
+                    Name = "finalLabel",
+                    Text = $"Final Label: {data.FinalLabel}",
+                    Font = new Font("Consolas", 9, FontStyle.Italic),
+                    ForeColor = Color.Blue,
+                    AutoSize = true
+                };
+                parent.Controls.Add(finalLabel);
+            }
+        }
 
         // dibuat sekali saja, dipanggil ketika JSON pertama kali masuk
         void BuildUiFirstTime(Root data, FlowLayoutPanel parent)
@@ -1307,9 +1513,25 @@ namespace WindowsFormsApp1
             plcDialog.Show();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, EventArgs e)
         {
-                inspectFrame();
+            var tcs = new TaskCompletionSource<byte[]>();
+
+            _cam.FrameReadyForGrpc += bmp =>
+            {
+                if (bmp != null && bmp.Length > 0)
+                    tcs.TrySetResult(bmp);
+            };
+
+            // Tunggu sampai event menghasilkan frame
+            byte[] frameBytes = await tcs.Task;
+            string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string fileNameFormat = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{imageId}.bmp";
+
+            await fileUtils.SaveFrameToDiskAsync(frameBytes, fileNameFormat, imageId);
+            _imageDbOperation.InsertImage(fileNameFormat, imageId);
+
+            inspectFrame(frameBytes, imageId);
         }
 
         private void button3_Click(object sender, EventArgs e)

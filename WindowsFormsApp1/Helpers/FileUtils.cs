@@ -93,5 +93,15 @@ namespace WindowsFormsApp1.Helpers
 
             return fn == null ? null : Path.Combine(dir, fn);
         }
+
+        public string GetLatestImage()
+        {
+            var dir = Path.Combine(
+                   Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                   "CapturedFrames");
+            var fn = _imageDbOperation.GetLatestImageById();
+
+            return fn == null ? null : Path.Combine(dir, fn);
+        }
     }
 }

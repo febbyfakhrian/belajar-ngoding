@@ -1,87 +1,136 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static WindowsFormsApp1.Models.WorkflowModels;
-using WindowsFormsApp1.Activities;
-using Microsoft.Msagl.Drawing;
-using Microsoft.Msagl.GraphViewerGdi;
+using Newtonsoft.Json;
+using RulesEngine;
+using RulesEngine.Models;
 
 namespace WindowsFormsApp1
 {
-    public partial class WorkflowForm: Form
+    public static class MyFuncs
     {
-        private readonly GViewer _viewer = new GViewer();
-        private Graph _graph = new Graph();
+        public static string AgeGroup(int age) => age < 18 ? "Dewasa" : "Anak";
+        public static bool AgeShow(int age) => age < 18;
+
+        public static double Diskon(double amount)
+        {
+            // debugging saja, boleh dihapus
+            // Console.WriteLine("Diskon called: " + amount);
+            if (amount >= 1000) return 0.15;
+            if (amount >= 500) return 0.10;
+            return 0;
+        }
+    }
+
+    public partial class WorkflowForm : Form
+    {
+        private RulesEngine.RulesEngine _rulesEngine;
 
         public WorkflowForm()
         {
             InitializeComponent();
+            LoadRulesFromJson();
         }
 
-        private async void WorkflowForm_LoadAsync(object sender, EventArgs e)
+        private void LoadRulesFromJson()
         {
-            var wf = new WorkflowDef
-                {
-                    Id = "wf1",
-                    Name = "Demo Workflow",
-                    Nodes = new List<NodeDef>
-                {
-                    new NodeDef { Id = "start", Type = "Start" },
-                    new NodeDef { Id = "fetch", Type = "HttpGet", DependsOn = new List<string>{"start"},
-                        Params = new Dictionary<string, object>{{ "url", "https://jsonplaceholder.typicode.com/todos/1" }}},
-                    new NodeDef { Id = "transform", Type = "Script", DependsOn = new List<string>{"fetch"},
-                        Params = new Dictionary<string, object>{{ "source", "fetch.body" }}}
-                }
-            };
-
-            // 🔹 TAMPILKAN GRAF DULU
-            RenderWorkflowGraph(wf);
-
-            var activities = new Dictionary<string, IActivity>
+            try
             {
-                ["Start"] = new StartActivity(),
-                ["HttpGet"] = new HttpGetActivity(),
-                ["Script"] = new ScriptActivity()
-            };
+                string jsonPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "Rules.json");
 
-            var executor = new WorkflowExecutor(activities);
-            await executor.RunAsync(wf);
+                if (!File.Exists(jsonPath))
+                {
+                    MessageBox.Show("Rules.json tidak ditemukan di Desktop!", "RulesEngine",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 1. Settings - daftarkan tipe custom
+                var settings = new ReSettings
+                {
+                    CustomTypes = new[] { typeof(MyFuncs) }
+                };
+
+                // 2. Baca & deserialize
+                string json = File.ReadAllText(jsonPath);
+                var workflows = JsonConvert.DeserializeObject<Workflow[]>(json);
+                if (workflows == null || workflows.Length == 0)
+                    throw new InvalidOperationException("Tidak ada workflow pada Rules.json");
+
+                // 3. Inisialisasi RulesEngine - JANGAN lupa passing settings
+                _rulesEngine = new RulesEngine.RulesEngine(workflows, settings);
+
+                MessageBox.Show("RulesEngine siap (workflow: PersonRules)", "RulesEngine",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Gagal memuat rules JSON: {ex.Message}", "RulesEngine",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-         private void RenderWorkflowGraph(WorkflowDef wf)
+        private async void btnRun_Click(object sender, EventArgs e)
+        {
+            if (_rulesEngine == null)
             {
-                var g = new Graph();
+                MessageBox.Show("RulesEngine belum siap.", "RulesEngine",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                // Tambah node (kotak dengan label Type + Id)
-                foreach (var n in wf.Nodes)
+            if (!int.TryParse(txtAge.Text, out int age))
+            {
+                MessageBox.Show("Masukkan angka umur!");
+                return;
+            }
+
+            lstResult.Items.Clear();
+            var person = new Person { Age = age, Country = "ID" };
+
+            // jalankan rule
+            var results = await _rulesEngine.ExecuteAllRulesAsync("PersonRules", person);
+
+            // tampilkan semua output sukses
+            foreach (var r in results.GetFlattenedResults()
+                                     .Where(x => !x.IsSuccess &&
+                                                x.ActionResult?.Output != null))
+                lstResult.Items.Add(r.ActionResult.Output.ToString());
+
+            if (lstResult.Items.Count == 0)
+                lstResult.Items.Add("Tidak ada rule yang match.");
+        }
+
+        #region Model
+        public class Person
+        {
+            public int Age { get; set; }
+            public string Country { get; set; } = "ID";
+            public string Message { get; set; }
+        }
+        #endregion
+    }
+
+    // Extension method supaya GetFlattenedResults tersedia
+    internal static class RuleResultExtensions
+    {
+        public static IEnumerable<RuleResultTree> GetFlattenedResults(
+            this IEnumerable<RuleResultTree> results)
+        {
+            foreach (var res in results)
+            {
+                yield return res;
+                if (res.ChildResults?.Any() == true)
                 {
-                    var node = new Microsoft.Msagl.Drawing.Node(n.Id)
-                    {
-                        LabelText = $"{n.Type}\n({n.Id})"
-                    };
-                    node.Attr.Shape = Shape.Box;
-                    g.AddNode(node);
+                    foreach (var child in res.ChildResults.GetFlattenedResults())
+                        yield return child;
                 }
-
-                // Tambah edge dari DependsOn -> Node
-                foreach (var n in wf.Nodes)
-                {
-                    foreach (var dep in n.DependsOn)
-                    {
-                        var e = g.AddEdge(dep, n.Id);
-                        e.Attr.ArrowheadAtTarget = ArrowStyle.Normal;
-                    }
-                }
-
-                _graph = g;
-                _viewer.Graph = _graph;   // <- WAJIB: assign supaya tampil
-                _viewer.Invalidate();
             }
         }
     }
+}
