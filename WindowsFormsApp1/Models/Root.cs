@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace WindowsFormsApp1.Models
 {
-    class Root
+    public class Root
     {
         [JsonProperty("components")]
         public Dictionary<string, List<ComponentItem>> Components { get; set; }

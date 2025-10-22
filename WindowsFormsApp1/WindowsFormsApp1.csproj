@@ -80,12 +80,6 @@
     <Reference Include="ConcurrentCollections, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ConcurrentHashSet.1.1.0\lib\net461\ConcurrentCollections.dll</HintPath>
     </Reference>
-    <Reference Include="FastExpressionCompiler, Version=5.0.2.0, Culture=neutral, PublicKeyToken=dfbf2bd50fcf7768, processorArchitecture=MSIL">
-      <HintPath>..\packages\FastExpressionCompiler.5.0.2\lib\net472\FastExpressionCompiler.dll</HintPath>
-    </Reference>
-    <Reference Include="FluentValidation, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
-      <HintPath>..\packages\FluentValidation.11.11.0\lib\netstandard2.0\FluentValidation.dll</HintPath>
-    </Reference>
     <Reference Include="Google.Protobuf, Version=3.21.12.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Protobuf.3.21.12\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
@@ -104,8 +98,8 @@
     <Reference Include="MicroCom.Runtime, Version=0.11.0.0, Culture=neutral, PublicKeyToken=b30be05a5f7688e9, processorArchitecture=MSIL">
       <HintPath>..\packages\MicroCom.Runtime.0.11.0\lib\netstandard2.0\MicroCom.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.7\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.10, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.10\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
@@ -116,8 +110,11 @@
     <Reference Include="Microsoft.Extensions.Configuration.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Configuration.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.DependencyInjection, Version=9.0.0.10, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.9.0.10\lib\net462\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=9.0.0.10, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.9.0.10\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.FileProviders.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.FileProviders.Abstractions.dll</HintPath>
@@ -134,21 +131,15 @@
     <Reference Include="Microsoft.Extensions.Primitives, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Primitives.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Primitives.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.IdentityModel.Abstractions, Version=8.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Abstractions.8.14.0\lib\net472\Microsoft.IdentityModel.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Logging, Version=8.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Logging.8.14.0\lib\net472\Microsoft.IdentityModel.Logging.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="NRules, Version=1.0.3.0, Culture=neutral, PublicKeyToken=8ad544355a4a2176, processorArchitecture=MSIL">
-      <HintPath>..\packages\NRules.Runtime.1.0.3\lib\netstandard2.0\NRules.dll</HintPath>
-    </Reference>
-    <Reference Include="NRules.Fluent, Version=1.0.3.0, Culture=neutral, PublicKeyToken=8ad544355a4a2176, processorArchitecture=MSIL">
-      <HintPath>..\packages\NRules.Fluent.1.0.3\lib\netstandard2.0\NRules.Fluent.dll</HintPath>
-    </Reference>
-    <Reference Include="NRules.Json, Version=1.0.3.0, Culture=neutral, PublicKeyToken=8ad544355a4a2176, processorArchitecture=MSIL">
-      <HintPath>..\packages\NRules.Json.1.0.3\lib\netstandard2.0\NRules.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="NRules.RuleModel, Version=1.0.3.0, Culture=neutral, PublicKeyToken=8ad544355a4a2176, processorArchitecture=MSIL">
-      <HintPath>..\packages\NRules.RuleModel.1.0.3\lib\netstandard2.0\NRules.RuleModel.dll</HintPath>
     </Reference>
     <Reference Include="OpenCvSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenCvSharp4.4.11.0.20250507\lib\net48\OpenCvSharp.dll</HintPath>
@@ -183,11 +174,11 @@
     <Reference Include="RJCP.SerialPortStream, Version=3.0.4.0, Culture=neutral, PublicKeyToken=5f5e7b70c6a74deb, processorArchitecture=MSIL">
       <HintPath>..\packages\RJCP.SerialPortStream.3.0.4\lib\net462\RJCP.SerialPortStream.dll</HintPath>
     </Reference>
-    <Reference Include="RulesEngine, Version=6.0.0.0, Culture=neutral, PublicKeyToken=e9a9a6d868fd62c3, processorArchitecture=MSIL">
-      <HintPath>..\packages\RulesEngine.6.0.0\lib\netstandard2.0\RulesEngine.dll</HintPath>
-    </Reference>
     <Reference Include="SharpYaml, Version=1.6.5.0, Culture=neutral, PublicKeyToken=1ced8108e942bc02, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpYaml.1.6.5\lib\net45\SharpYaml.dll</HintPath>
+    </Reference>
+    <Reference Include="Stateless, Version=4.0.0.0, Culture=neutral, PublicKeyToken=93038f0927583c9a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Stateless.5.20.0\lib\net462\Stateless.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -229,8 +220,8 @@
     <Reference Include="System.IO.Pipelines, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IO.Pipelines.9.0.0\lib\net462\System.IO.Pipelines.dll</HintPath>
     </Reference>
-    <Reference Include="System.Linq.Dynamic.Core, Version=1.6.0.1, Culture=neutral, PublicKeyToken=0f07ec44de6ac832, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Linq.Dynamic.Core.1.6.0.1\lib\net46\System.Linq.Dynamic.Core.dll</HintPath>
+    <Reference Include="System.Linq.Dynamic.Core, Version=1.6.0.0, Culture=neutral, PublicKeyToken=0f07ec44de6ac832, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Linq.Dynamic.Core.1.6.0\lib\net46\System.Linq.Dynamic.Core.dll</HintPath>
     </Reference>
     <Reference Include="System.Management" />
     <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -336,6 +327,9 @@
     <Reference Include="WorkflowCore.DSL, Version=3.17.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\WorkflowCore.DSL.3.17.0\lib\netstandard2.0\WorkflowCore.DSL.dll</HintPath>
     </Reference>
+    <Reference Include="YamlDotNet, Version=16.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
+      <HintPath>..\packages\YamlDotNet.16.3.0\lib\net47\YamlDotNet.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CameraManager.cs" />
@@ -347,11 +341,16 @@
     </Compile>
     <Compile Include="Helpers\ImageGrabber.cs" />
     <Compile Include="Helpers\ImageManipulationUtils.cs" />
+    <Compile Include="Models\IAutoInspectClient.cs" />
+    <Compile Include="Models\InspectionContext.cs" />
+    <Compile Include="Models\StateMachine.cs" />
+    <Compile Include="Services\CameraService.cs" />
     <Compile Include="Services\SettingsOperation.cs" />
-    <Compile Include="SettingsMenu\PlcDialog.cs">
+    <Compile Include="Services\StateMachine\FlowEngine.cs" />
+    <Compile Include="Forms\Dialogs\SettingsMenu\PlcDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\PlcDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\PlcDialog.Designer.cs">
       <DependentUpon>PlcDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="GrpcResponseStore.cs" />
@@ -374,23 +373,23 @@
     <Compile Include="DialogDebugMenuPlc.Designer.cs">
       <DependentUpon>DialogDebugMenuPlc.cs</DependentUpon>
     </Compile>
-    <Compile Include="GrpcService.cs" />
+    <Compile Include="Services\GrpcService.cs" />
     <Compile Include="LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="SettingsMenu\MESConfirmationDialog.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\MESConfirmationDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.Designer.cs">
       <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="SettingsMenu\MESDialog.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\MESDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\MESDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\MESDialog.Designer.cs">
       <DependentUpon>MESDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\ApiResponse.cs" />
@@ -402,16 +401,16 @@
     <Compile Include="Models\InspectionResult.cs" />
     <Compile Include="Models\Root.cs" />
     <Compile Include="MVCamera.cs" />
-    <Compile Include="SettingsMenu\DatabaseDialog.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\DatabaseDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.Designer.cs">
       <DependentUpon>DatabaseDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="SettingsMenu\PathLogDialog.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\PathLogDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\PathLogDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\PathLogDialog.Designer.cs">
       <DependentUpon>PathLogDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="PLCCommand.cs" />
@@ -422,21 +421,17 @@
     <Compile Include="Services\ImageDbOperation.cs" />
     <Compile Include="Services\InspectionLogger.cs" />
     <Compile Include="Services\PlcOperation.cs" />
-    <Compile Include="SettingsMenu\CameraDialog.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\CameraDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsMenu\CameraDialog.Designer.cs">
+    <Compile Include="Forms\Dialogs\SettingsMenu\CameraDialog.Designer.cs">
       <DependentUpon>CameraDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Helpers\VideoGrabber.cs" />
-    <Compile Include="WorkflowForm.cs" />
-    <Compile Include="WorkflowForm.Designer.cs">
-      <DependentUpon>WorkflowForm.cs</DependentUpon>
-    </Compile>
     <EmbeddedResource Include="DialogDebugMenuGrpc.resx">
       <DependentUpon>DialogDebugMenuGrpc.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SettingsMenu\PlcDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\PlcDialog.resx">
       <DependentUpon>PlcDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainDashboard.resx">
@@ -451,16 +446,16 @@
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SettingsMenu\MESConfirmationDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.resx">
       <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SettingsMenu\MESDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\MESDialog.resx">
       <DependentUpon>MESDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SettingsMenu\DatabaseDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.resx">
       <DependentUpon>DatabaseDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SettingsMenu\PathLogDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\PathLogDialog.resx">
       <DependentUpon>PathLogDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -473,12 +468,15 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="SettingsMenu\CameraDialog.resx">
+    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\CameraDialog.resx">
       <DependentUpon>CameraDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="WorkflowForm.resx">
-      <DependentUpon>WorkflowForm.cs</DependentUpon>
-    </EmbeddedResource>
+    <None Include="flowconfig-workflow.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="flowconfig.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -534,7 +532,7 @@
     <None Include="Resources\NoImage.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ILLink\ILLink.Descriptors.LibraryBuild.xml" />
+    <Folder Include="Services\InspectionFlow\Nodes\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -1,0 +1,26 @@
+States:
+  - Idle
+  - CheckSignalRead
+  - InspectFrame
+  - Done
+
+OnEntry:
+  InspectFrame:
+    - LampOn
+    - SendData
+
+Transitions:
+  - From: Idle
+    To: CheckSignalRead
+    Trigger: Start
+    Guard: True
+
+  - From: CheckSignalRead
+    To: InspectFrame
+    Trigger: SignalRead
+    Guard: True          # outcome / when
+
+  - From: InspectFrame
+    To: Done
+    Trigger: Selesai
+    Guard: False

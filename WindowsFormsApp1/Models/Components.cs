@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace WindowsFormsApp1.Models
 {
-    class Components
+    public class Components
     {
         [JsonProperty("fiducial")]
         public List<ComponentItem> Fiducial { get; set; }

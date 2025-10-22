@@ -24,10 +24,10 @@ namespace WindowsFormsApp1
         {
             if (metroTextBox1.Text == "user" && metroTextBox2.Text == "password")
             {
-                _ = new MainDashboard
-                {
-                    Visible = true
-                };
+                //_ = new MainDashboard
+                //{
+                //    Visible = true
+                //};
                 this.Hide();
             }
             else

@@ -23,6 +23,7 @@ using System.Windows.Forms;
 using WindowsFormsApp1.Helpers;
 using WindowsFormsApp1.Models;
 using WindowsFormsApp1.Services;
+using WindowsFormsApp1.Services.StateMachine;
 using static System.Net.Mime.MediaTypeNames;
 using static WindowsFormsApp1.VideoGrabber;
 using Label = System.Windows.Forms.Label;
@@ -65,51 +66,21 @@ namespace WindowsFormsApp1
         private ImageDbOperation _imageDbOperation => Program.DbHelper;
         private ImageManipulationUtils imageManipulationUtils = new ImageManipulationUtils();
         private readonly ImageGrabber _grabber = new ImageGrabber();
+        private readonly FlowEngine _engine;
 
-        private static int indexFrame = 0;
-
-        public MainDashboard()
+        public MainDashboard(FlowEngine engine)
         {
+            _engine = engine;
             InitializeComponent();
 
-            CheckForIllegalCrossThreadCalls = false;
-            var folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string dbPath = Path.Combine(folder, "inspection_platform.db");
-
-            var _connection = new SQLiteConnection($"Data Source={dbPath};Version=3;");
-
             _cam.Error += msg => MessageBox.Show(msg);
-            //_cam.FrameEncoded += _ => Task.Run(ForwardLoop);
-            //_grpc.BoxesReceived += json =>
-            //{
-            //    var data = System.Text.Json.JsonSerializer.Deserialize<ResultDTO>(json);
-
-            //    // Clear old boxes
-            //    _cam.Boxes.Clear();
-
-            //    if (data?.Boxes != null)
-            //    {
-            //        Console.WriteLine("=== Raw Boxes ===");
-            //        foreach (var box in data.Boxes)
-            //        {
-            //            Console.WriteLine($"[{box[0]}, {box[1]}, {box[2]}, {box[3]}]");
-
-            //            _cam.Boxes.Add(new SKRect(
-            //                box[0], box[1],           // left, top
-            //                box[2], box[3]));         // right, bottom
-            //        }
-            //    }
-            //};
             _grabber.FramePreview += OnFramePreview;
 
             _grpc.OnDisconnected += ScheduleReconnect;
-            _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS)
-            {
-                AutoReset = false
-            };
-            _reconnectTimer.Elapsed += async (_, __) => await TryReconnectAsync();
-
             _ = Task.Run(() => _cam.Start());
+
+            _engine.Fire("Start");
+
         }
 
         private void ScheduleReconnect()
@@ -118,27 +89,6 @@ namespace WindowsFormsApp1
                 _reconnectTimer.Start();
         }
 
-        private async Task TryReconnectAsync()
-        {
-            Console.WriteLine("[gRPC] reconnecting...");
-            //await _grpc.ReconnectAsync();
-        }
-
-
-        private async Task ForwardLoop()
-        {
-            while (true)
-            {
-                if (_frameQueue.TryDequeue(out var jpeg))
-                {
-                    await _grpc.ProcessImageAsync(jpeg); // akan return cepat kalau _streamAlive=false
-                }
-                else
-                {
-                    await Task.Delay(5);
-                }
-            }
-        }
 
         private async void Form1_Load(object sender, EventArgs e)
         {
@@ -457,7 +407,6 @@ namespace WindowsFormsApp1
             }
         }
 
-
         // ch:取图前的必要操作步骤 | en:Necessary operation before grab
         public Int32 NecessaryOperBeforeGrab()
         {
@@ -585,7 +534,6 @@ namespace WindowsFormsApp1
                 NecessaryOperBeforeGrab();
                 //pictureBox5.Visible = false;
                 labelCameraInspection.Visible = false;
-                //_cam.StartDebug();
                 tableLayoutPanel12.RowStyles[1].Height = 0;
                 tableLayoutPanel12.Margin = new Padding(0);
                 pictureBox5.Dock = DockStyle.Fill;
@@ -604,7 +552,6 @@ namespace WindowsFormsApp1
                 var grab = VideoGrabberService.Instance;
 
                 grab.FramePreview += bmp => pictureBox5.Image = (Bitmap)bmp.Clone();
-                //grab.FrameEncoded += bytes => Console.WriteLine($"Encoded frame: {bytes.Length} bytes");
 
                 _cts = new CancellationTokenSource();
                 try
@@ -717,6 +664,8 @@ namespace WindowsFormsApp1
 
                 if (cmd.ToUpper().Equals(lineClean.ToUpper(), StringComparison.Ordinal))
                 {
+                    _engine.Fire("InspectFrame");
+
                     var tcs = new TaskCompletionSource<byte[]>();
 
                     _cam.FrameReadyForGrpc += bmp =>
@@ -734,6 +683,10 @@ namespace WindowsFormsApp1
                     _imageDbOperation.InsertImage(fileNameFormat, imageId);
 
                     inspectFrame(frameBytes, imageId);
+                }
+                else
+                {
+                    //_engine.Fire("SignalReadFalse");
                 }
             }));
         }
@@ -817,6 +770,7 @@ namespace WindowsFormsApp1
 
             if (!isDebug.Checked)
             {
+                _engine.Fire("SignalRead");
                 handleSignalFromPLC();
             }
 
@@ -828,6 +782,7 @@ namespace WindowsFormsApp1
                 ShowErrorMsg("Start Grabbing Fail!", nRet);
                 return;
             }
+
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
@@ -1536,9 +1491,9 @@ namespace WindowsFormsApp1
 
         private void button3_Click(object sender, EventArgs e)
         {
-            var workflowForm = new WorkflowForm();
+            //var workflowForm = new WorkflowForm();
 
-            workflowForm.Show();
+            //workflowForm.Show();
         }
     }
 }

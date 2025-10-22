@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace WindowsFormsApp1.Models
 {
-    class ComponentItem
+    public class ComponentItem
     {
         [JsonProperty("boxes")]
         public List<int> Boxes { get; set; }
