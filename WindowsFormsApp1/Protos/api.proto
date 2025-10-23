@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package api;
+
+service AutoInspect {
+  rpc ProcessImage (ImageRequest) returns (ImageResponse);
+  rpc ProcessImageStream (stream ImageRequest) returns (stream ImageResponse);
+  rpc UpdateConfig (ConfigRequest) returns (DefaultResponse);
+}
+
+message ImageRequest {
+  string image_id = 1;
+  bytes image_data = 2;        // Raw image bytes
+}
+
+message ImageResponse {
+  string status = 1;
+  string message = 2;
+  string result = 3;           // Result JSON string. TODO: it should be defined precisely, not only arbitrary json.
+}
+
+message ConfigRequest {
+  string config_path = 1;       // Path to the config file.
+}
+
+message DefaultResponse {
+  string status = 1;
+  string message = 2;
+}

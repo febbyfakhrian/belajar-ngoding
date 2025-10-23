@@ -1,0 +1,1072 @@
+using Api;
+using AutoInspectionPlatform;
+using MvCamCtrl.NET;
+using Newtonsoft.Json;
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using PLCCommunication;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using WindowsFormsApp1.Domain.Flow.Engine;
+using WindowsFormsApp1.Helpers;
+using WindowsFormsApp1.Models;
+using WindowsFormsApp1.Services;
+using WindowsFormsApp1.Services.StateMachine;
+using static System.Net.Mime.MediaTypeNames;
+using static WindowsFormsApp1.VideoGrabber;
+using Label = System.Windows.Forms.Label;
+using Panel = System.Windows.Forms.Panel;
+
+namespace WindowsFormsApp1
+{
+    public partial class MainDashboard : Form
+    {
+        // --------- Services / State ----------
+        private readonly CameraManager _cam = new CameraManager(new ConcurrentQueue<byte[]>());
+        private readonly GrpcService _grpc = new GrpcService();
+        private readonly ImageManipulationUtils _imageUtil = new ImageManipulationUtils();
+        private readonly ImageGrabber _grabber = new ImageGrabber();
+        private readonly FileUtils _fileUtils = new FileUtils();
+        private ImageDbOperation _imageDb => Program.DbHelper;
+
+        private StatelessHost Host { get { return (StatelessHost)this.Tag; } }
+
+        // Hik SDK discovery store
+        private MyCamera.MV_CC_DEVICE_INFO_LIST _deviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
+
+        // Buffering for SDK conversions (kept as in original)
+        private IntPtr _convertDstBuf = IntPtr.Zero;
+        private uint _convertDstBufLen = 0;
+        private Bitmap _bitmap = null;
+        private PixelFormat _bitmapPixelFormat = PixelFormat.DontCare;
+
+        // UI/flow flags
+        private bool _grabbing;
+        private bool _sidebarExpand;
+        private CancellationTokenSource _ctsPreview;
+        private readonly CancellationTokenSource _ctsForward = new CancellationTokenSource();
+
+        // Sidebar animation constants
+        private const float CollapsedWidth = 15f;
+        private const float Step = 10f;
+        private float _expandedWidth;
+
+        // Reconnect
+        private System.Timers.Timer _reconnectTimer;
+        private const int RECONNECT_INTERVAL_MS = 3000;
+
+        public MainDashboard()
+        {
+            InitializeComponent();
+
+            // Events
+            _cam.Error += msg => MessageBox.Show(msg);
+            _grabber.FramePreview += OnFramePreview;
+            _grpc.OnDisconnected += ScheduleReconnect;
+
+            // Start camera background (non-blocking)
+            _ = Task.Run(delegate { _cam.Start(); });
+
+            // Safe timer init
+            _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS);
+            _reconnectTimer.AutoReset = true;
+            _reconnectTimer.Elapsed += (s, e) => TryGrpcReconnect();
+        }
+
+        // ------------- Form lifecycle -------------
+
+        private async void Form1_Load(object sender, EventArgs e)
+        {
+            // UI perf improvements
+            TryEnableDoubleBuffer(tableLayoutPanel9);
+
+            DeviceListAcq();
+
+            // FSM entry
+            if (Host != null)
+                await Host.FireAsync("Start");
+
+            // gRPC startup
+            var ok = await _grpc.StartAsync();
+            if (!ok)
+            {
+                MessageBox.Show("Gagal koneksi ke Python server 50052");
+                return;
+            }
+
+            showSidebarBtn.Visible = true;
+            showSidebarBtn.BringToFront();
+
+            // Ensure camera display surface is set
+            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+        }
+
+        private async void OnFormClosing(object sender, FormClosingEventArgs e)
+        {
+            // Stop timers
+            if (_reconnectTimer != null)
+            {
+                _reconnectTimer.Stop();
+                _reconnectTimer.Dispose();
+                _reconnectTimer = null;
+            }
+
+            // Cancel tasks
+            if (_ctsPreview != null) _ctsPreview.Cancel();
+            _ctsForward.Cancel();
+
+            // Dispose devices
+            if (_cam != null) _cam.Dispose();
+            if (_grpc != null) await _grpc.DisposeAsync();
+        }
+
+        // ------------- UI helpers -------------
+
+        private static void TryEnableDoubleBuffer(Control c)
+        {
+            try
+            {
+                var prop = c.GetType().GetProperty(
+                    "DoubleBuffered",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+                );
+                if (prop != null) prop.SetValue(c, true, null);
+            }
+            catch { /* ignore */ }
+        }
+
+        private void SafeInvoke(Action a)
+        {
+            if (InvokeRequired) BeginInvoke(a);
+            else a();
+        }
+
+        private void ShowErrorMsg(string message, int error = 0)
+        {
+            string errorMsg = (error == 0) ? message : (message + ": Error =" + string.Format("{0:X}", error));
+            switch (error)
+            {
+                case MyCamera.MV_E_HANDLE: errorMsg += " Error or invalid handle "; break;
+                case MyCamera.MV_E_SUPPORT: errorMsg += " Not supported function "; break;
+                case MyCamera.MV_E_BUFOVER: errorMsg += " Cache is full "; break;
+                case MyCamera.MV_E_CALLORDER: errorMsg += " Function calling order error "; break;
+                case MyCamera.MV_E_PARAMETER: errorMsg += " Incorrect parameter "; break;
+                case MyCamera.MV_E_RESOURCE: errorMsg += " Applying resource failed "; break;
+                case MyCamera.MV_E_NODATA: errorMsg += " No data "; break;
+                case MyCamera.MV_E_PRECONDITION: errorMsg += " Precondition error or environment changed "; break;
+                case MyCamera.MV_E_VERSION: errorMsg += " Version mismatches "; break;
+                case MyCamera.MV_E_NOENOUGH_BUF: errorMsg += " Insufficient memory "; break;
+                case MyCamera.MV_E_UNKNOW: errorMsg += " Unknown error "; break;
+                case MyCamera.MV_E_GC_GENERIC: errorMsg += " General error "; break;
+                case MyCamera.MV_E_GC_ACCESS: errorMsg += " Node accessing condition error "; break;
+                case MyCamera.MV_E_ACCESS_DENIED: errorMsg += " No permission "; break;
+                case MyCamera.MV_E_BUSY: errorMsg += " Device busy or network disconnected "; break;
+                case MyCamera.MV_E_NETER: errorMsg += " Network error "; break;
+            }
+            MessageBox.Show(errorMsg, "PROMPT");
+        }
+
+        // ------------- Sidebar -------------
+
+        private void pictureBox2_Click(object sender, EventArgs e)
+        {
+            _sidebarExpand = !_sidebarExpand;
+            tableLayoutPanel1.ColumnStyles[1].Width = 50;
+            sidebarTimer.Start();
+        }
+
+        private void showSidebarBtn_Click(object sender, EventArgs e)
+        {
+            _sidebarExpand = !_sidebarExpand;
+            tableLayoutPanel1.ColumnStyles[1].Width = 0;
+            sidebarTimer.Start();
+        }
+
+        private void sidebarTimer_Tick(object sender, EventArgs e)
+        {
+            float current = tableLayoutPanel1.ColumnStyles[0].Width;
+            float target = _sidebarExpand ? _expandedWidth : CollapsedWidth;
+
+            if (Math.Abs(current - target) < Step)
+            {
+                tableLayoutPanel1.ColumnStyles[0].Width = target;
+                sidebarTimer.Stop();
+            }
+            else
+            {
+                tableLayoutPanel1.ColumnStyles[0].Width += (current < target) ? Step : -Step;
+            }
+        }
+
+        // ------------- Camera / Device -------------
+
+        private void DeviceListAcq()
+        {
+            try
+            {
+                GC.Collect();
+                cbDeviceList.Items.Clear();
+                _deviceList.nDeviceNum = 0;
+
+                int nRet = MyCamera.MV_CC_EnumDevices_NET(
+                    MyCamera.MV_GIGE_DEVICE |
+                    MyCamera.MV_USB_DEVICE |
+                    MyCamera.MV_GENTL_GIGE_DEVICE |
+                    MyCamera.MV_GENTL_CAMERALINK_DEVICE |
+                    MyCamera.MV_GENTL_CXP_DEVICE |
+                    MyCamera.MV_GENTL_XOF_DEVICE,
+                    ref _deviceList);
+
+                if (nRet != 0)
+                {
+                    ShowErrorMsg("Enumerate devices fail!", 0);
+                    return;
+                }
+
+                for (int i = 0; i < _deviceList.nDeviceNum; i++)
+                {
+                    var device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(
+                        _deviceList.pDeviceInfo[i],
+                        typeof(MyCamera.MV_CC_DEVICE_INFO));
+
+                    AppendDeviceToCombo(device);
+                }
+
+                if (_deviceList.nDeviceNum != 0)
+                    cbDeviceList.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMsg("Device enumeration error: " + ex.Message, 0);
+            }
+        }
+
+        private void AppendDeviceToCombo(MyCamera.MV_CC_DEVICE_INFO device)
+        {
+            string item = null;
+
+            if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
+            {
+                var gige = (MyCamera.MV_GIGE_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stGigEInfo, typeof(MyCamera.MV_GIGE_DEVICE_INFO_EX));
+                item = "GEV: " + GetDeviceDisplayName(gige.chUserDefinedName, gige.chManufacturerName, gige.chModelName) + " (" + gige.chSerialNumber + ")";
+            }
+            else if (device.nTLayerType == MyCamera.MV_USB_DEVICE)
+            {
+                var usb = (MyCamera.MV_USB3_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stUsb3VInfo, typeof(MyCamera.MV_USB3_DEVICE_INFO_EX));
+                item = "U3V: " + GetDeviceDisplayName(usb.chUserDefinedName, usb.chManufacturerName, usb.chModelName) + " (" + usb.chSerialNumber + ")";
+            }
+            else if (device.nTLayerType == MyCamera.MV_GENTL_CAMERALINK_DEVICE)
+            {
+                var cml = (MyCamera.MV_CML_DEVICE_INFO)MyCamera.ByteToStruct(device.SpecialInfo.stCMLInfo, typeof(MyCamera.MV_CML_DEVICE_INFO));
+                item = "CML: " + GetDeviceDisplayName(cml.chUserDefinedName, cml.chManufacturerInfo, cml.chModelName) + " (" + cml.chSerialNumber + ")";
+            }
+            else if (device.nTLayerType == MyCamera.MV_GENTL_CXP_DEVICE)
+            {
+                var cxp = (MyCamera.MV_CXP_DEVICE_INFO)MyCamera.ByteToStruct(device.SpecialInfo.stCXPInfo, typeof(MyCamera.MV_CXP_DEVICE_INFO));
+                item = "CXP: " + GetDeviceDisplayName(cxp.chUserDefinedName, cxp.chManufacturerInfo, cxp.chModelName) + " (" + cxp.chSerialNumber + ")";
+            }
+            else if (device.nTLayerType == MyCamera.MV_GENTL_XOF_DEVICE)
+            {
+                var xof = (MyCamera.MV_XOF_DEVICE_INFO)MyCamera.ByteToStruct(device.SpecialInfo.stXoFInfo, typeof(MyCamera.MV_XOF_DEVICE_INFO));
+                item = "XOF: " + GetDeviceDisplayName(xof.chUserDefinedName, xof.chManufacturerInfo, xof.chModelName) + " (" + xof.chSerialNumber + ")";
+            }
+
+            if (!string.IsNullOrEmpty(item))
+                cbDeviceList.Items.Add(item);
+        }
+
+        private string GetDeviceDisplayName(byte[] userDefinedNameBytes, string manufacturer, string model)
+        {
+            string udf = "";
+            if (userDefinedNameBytes != null && userDefinedNameBytes.Length > 0 && userDefinedNameBytes[0] != '\0')
+            {
+                udf = MyCamera.IsTextUTF8(userDefinedNameBytes)
+                    ? Encoding.UTF8.GetString(userDefinedNameBytes).TrimEnd('\0')
+                    : Encoding.Default.GetString(userDefinedNameBytes).TrimEnd('\0');
+
+                udf = DeleteTail(udf);
+            }
+            return string.IsNullOrEmpty(udf) ? (manufacturer + " " + model) : udf;
+        }
+
+        private string DeleteTail(string s)
+        {
+            s = Regex.Unescape(s);
+            int idx = s.IndexOf("\0");
+            return (idx >= 0) ? s.Remove(idx) : s;
+        }
+
+        private bool IsMono(uint pixelType)
+        {
+            switch (pixelType)
+            {
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono1p:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono2p:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono4p:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono8:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono8_Signed:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono10:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono10_Packed:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono12:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono12_Packed:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono14:
+                case (uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono16:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public int NecessaryOperBeforeGrab()
+        {
+            if (isDebug.Checked)
+            {
+                // Simulated Mono8 1920x1080 buffer
+                const uint w = 1920, h = 1080;
+                _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
+                _convertDstBufLen = w * h;
+                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
+                _bitmap = new Bitmap((int)w, (int)h, _bitmapPixelFormat);
+
+                var pal = _bitmap.Palette;
+                for (int i = 0; i < pal.Entries.Length; i++) pal.Entries[i] = Color.FromArgb(i, i, i);
+                _bitmap.Palette = pal;
+
+                return MyCamera.MV_OK;
+            }
+
+            // Live camera: query width/height/pixfmt via CameraManager wrapper
+            var stWidth = new MyCamera.MVCC_INTVALUE_EX();
+            var stHeight = new MyCamera.MVCC_INTVALUE_EX();
+            var stPixel = new MyCamera.MVCC_ENUMVALUE();
+
+            int nRet = _cam.GetIntValueEx("Width", ref stWidth);
+            if (nRet != MyCamera.MV_OK) { OnError("Get Width Info Fail!"); return nRet; }
+
+            nRet = _cam.GetIntValueEx("Height", ref stHeight);
+            if (nRet != MyCamera.MV_OK) { OnError("Get Height Info Fail!"); return nRet; }
+
+            nRet = _cam.GetEnumValue("PixelFormat", ref stPixel);
+            if (nRet != MyCamera.MV_OK) { OnError("Get Pixel Format Fail!"); return nRet; }
+
+            if ((int)MyCamera.MvGvspPixelType.PixelType_Gvsp_Undefined == (int)stPixel.nCurValue)
+                return MyCamera.MV_E_UNKNOW;
+
+            // allocate convert buffer
+            if (IsMono(stPixel.nCurValue))
+            {
+                _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
+                if (_convertDstBuf != IntPtr.Zero) Marshal.FreeHGlobal(_convertDstBuf);
+                _convertDstBufLen = (uint)(stWidth.nCurValue * stHeight.nCurValue);
+                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
+            }
+            else
+            {
+                _bitmapPixelFormat = PixelFormat.Format24bppRgb;
+                if (_convertDstBuf != IntPtr.Zero) Marshal.FreeHGlobal(_convertDstBuf);
+                _convertDstBufLen = (uint)(3 * stWidth.nCurValue * stHeight.nCurValue);
+                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
+            }
+
+            if (_bitmap != null) { _bitmap.Dispose(); _bitmap = null; }
+            _bitmap = new Bitmap((int)stWidth.nCurValue, (int)stHeight.nCurValue, _bitmapPixelFormat);
+
+            if (_bitmapPixelFormat == PixelFormat.Format8bppIndexed)
+            {
+                var pal = _bitmap.Palette;
+                for (int i = 0; i < pal.Entries.Length; i++) pal.Entries[i] = Color.FromArgb(i, i, i);
+                _bitmap.Palette = pal;
+            }
+
+            return MyCamera.MV_OK;
+        }
+
+        private void OnError(string msg)
+        {
+            var handler = Error;
+            if (handler != null) handler(msg);
+        }
+
+        // ------------- Buttons / Menu -------------
+
+        private async void openCamera_Click(object sender, EventArgs e)
+        {
+            if (isDebug.Checked)
+            {
+                StartDebugPreviewLoop();
+                return;
+            }
+
+            if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
+            {
+                ShowErrorMsg("No device, please select", 0);
+                return;
+            }
+
+            var device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(
+                _deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
+                typeof(MyCamera.MV_CC_DEVICE_INFO));
+
+            if (!_cam.Open(device))
+            {
+                ShowErrorMsg("Failed to open device", 0);
+                return;
+            }
+
+            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+        }
+
+        private async void btnStartGrab_Click(object sender, EventArgs e)
+        {
+            int nRet = NecessaryOperBeforeGrab();
+            if (MyCamera.MV_OK != nRet)
+            {
+                ShowErrorMsg("Necessary operations before grab failed", nRet);
+                return;
+            }
+
+            _grabbing = true;
+            nRet = _cam.Start();
+
+            pictureBox5.Visible = false;
+            labelCameraInspection.Visible = false;
+
+            if (!isDebug.Checked)
+            {
+                //await Host.FireAsync("SignalRead");
+                //SubscribePlcSignal();
+            }
+
+            if (MyCamera.MV_OK != nRet)
+            {
+                pictureBox5.Visible = true;
+                labelCameraInspection.Visible = true;
+                _grabbing = false;
+                ShowErrorMsg("Start Grabbing Fail!", nRet);
+            }
+        }
+
+        private void stopCamera_Click(object sender, EventArgs e)
+        {
+            _grabbing = false;
+            _cam.Stop();
+        }
+
+        private void cameraToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new Form2()) { dlg.StartPosition = FormStartPosition.CenterParent; dlg.ShowDialog(this); }
+        }
+
+        private void mESToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new MESDialog()) { dlg.StartPosition = FormStartPosition.CenterParent; dlg.ShowDialog(this); }
+        }
+
+        private void pathLogToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new PathLogDialog()) { dlg.StartPosition = FormStartPosition.CenterParent; dlg.ShowDialog(this); }
+        }
+
+        private void gRPCToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new DialogDebugMenuGrpc().Show();
+        }
+
+        private void pLCToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new DialogDebugMenuPlc().Show();
+        }
+
+        private void databaseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new DatabaseDialog().Show();
+        }
+
+        private void pLCToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            new PlcDialog().Show();
+        }
+
+        // ------------- Preview / Debug -------------
+
+        public void OnFramePreview(Bitmap bmp)
+        {
+            SafeInvoke(delegate { pictureBox5.Image = bmp; });
+        }
+
+        private void StartDebugPreviewLoop()
+        {
+            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+            NecessaryOperBeforeGrab();
+
+            labelCameraInspection.Visible = false;
+            tableLayoutPanel12.RowStyles[1].Height = 0;
+            tableLayoutPanel12.Margin = new Padding(0);
+            pictureBox5.Dock = DockStyle.Fill;
+            pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox5.Margin = new Padding(0);
+            pictureBox5.Padding = new Padding(0);
+
+            if (_ctsPreview != null)
+            {
+                _ctsPreview.Cancel();
+                _ctsPreview.Dispose();
+                _ctsPreview = null;
+                return;
+            }
+
+            _ctsPreview = new CancellationTokenSource();
+            var grab = VideoGrabberService.Instance;
+
+            grab.FramePreview += b => SafeInvoke(delegate { pictureBox5.Image = (Bitmap)b.Clone(); });
+
+            _ = Task.Run(async delegate
+            {
+                try
+                {
+                    while (!_ctsPreview.IsCancellationRequested)
+                    {
+                        if (GrpcResponseStore.LastResponse != null)
+                        {
+                            RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
+                        }
+                        resultInspectionLabel1.Text = "Debug Preview";
+                        tableLayoutPanel9.RowCount = 1;
+                        await Task.Delay(500, _ctsPreview.Token);
+                    }
+                }
+                catch (OperationCanceledException) { }
+            });
+        }
+
+        // ------------- PLC → Inspect pipeline -------------
+
+        private void SubscribePlcSignal()
+        {
+            // Subscribe once; handler executes on UI thread via BeginInvoke
+            PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(async delegate
+            {
+                if (string.IsNullOrWhiteSpace(lineRaw)) return;
+
+                string cmd = Encoding.ASCII.GetString(WritePLCAddress.READ).TrimEnd('\r', '\n');
+                string lineClean = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n").TrimEnd('\r', '\n');
+
+                if (string.Equals(cmd, lineClean, StringComparison.OrdinalIgnoreCase))
+                {
+                    await Host.FireAsync("InspectFrame");
+                    await CaptureAndProcessOnceAsync();
+                }
+            }));
+        }
+
+        private async Task CaptureAndProcessOnceAsync()
+        {
+            // Wait one frame from CameraManager
+            var tcs = new TaskCompletionSource<byte[]>();
+            System.Action<byte[]> handler = null;
+            handler = (b) => { if (b != null && b.Length > 0) tcs.TrySetResult(b); };
+            _cam.FrameReadyForGrpc += handler;
+
+            byte[] frameBytes = null;
+            try { frameBytes = await tcs.Task; }
+            finally { _cam.FrameReadyForGrpc -= handler; }
+
+            // Persist & index
+            string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string fileName = "frame_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + imageId + ".bmp";
+            await _fileUtils.SaveFrameToDiskAsync(frameBytes, fileName, imageId);
+            _imageDb.InsertImage(fileName, imageId);
+
+            // Process via gRPC → render
+            await _grpc.ProcessImageAsync(frameBytes, default(System.Threading.CancellationToken), imageId);
+            if (GrpcResponseStore.LastResponse != null)
+                RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
+
+            if (!isDebug.Checked) MoveToFrame();
+        }
+
+        private void MoveToFrame()
+        {
+            if (GrpcResponseStore.LastResponse == null ||
+                string.IsNullOrEmpty(GrpcResponseStore.LastResponse.Result)) return;
+
+            var result = JsonConvert.DeserializeObject<Root>(GrpcResponseStore.LastResponse.Result);
+            if (result == null) return;
+
+            if (result.FinalLabel)
+                PlcDialog.PlcHelper.SendCommand(WritePLCAddress.FAIL);
+            else
+                PlcDialog.PlcHelper.SendCommand(WritePLCAddress.PASS);
+        }
+
+        // ------------- Reconnect -------------
+
+        private void ScheduleReconnect()
+        {
+            if (_reconnectTimer != null && !_reconnectTimer.Enabled)
+                _reconnectTimer.Start();
+        }
+
+        private async void TryGrpcReconnect()
+        {
+            try
+            {
+                if (_grpc == null) return;
+                var ok = await _grpc.StartAsync();
+                if (ok && _reconnectTimer != null) _reconnectTimer.Stop();
+            }
+            catch { /* keep retrying */ }
+        }
+
+        // ------------- UI Rendering (unchanged logic, cleaned) -------------
+
+        public void RenderComponentsUI(string json, Control parent)
+        {
+            var result = JsonConvert.DeserializeObject<Root>(json);
+            if (result == null || result.Components == null) return;
+
+            if (componentResultInspectionRadioButton.Checked)
+            {
+                BuildUiFirstTimeComponentInspection(result, flowLayoutPanel1);
+                UpdateUiInspectionResultComponentInspection(result, flowLayoutPanel1);
+            }
+            else
+            {
+                BuildUiFirstTime(result, flowLayoutPanel1);
+                UpdateUiInspectionResult(result, flowLayoutPanel1);
+            }
+        }
+
+        private void UpdateUiInspectionResult(Root data, Control parent)
+        {
+            if (data == null || data.Components == null) return;
+            parent.SuspendLayout();
+
+            foreach (var kv in data.Components)
+            {
+                string key = kv.Key;
+
+                var imgBox = parent.Controls.Find("imgBox_" + key, true).FirstOrDefault() as PictureBox;
+                var resultLbl = parent.Controls.Find("resultLbl_" + key, true).FirstOrDefault() as Label;
+                var parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
+                var innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
+
+                if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
+
+                var item = kv.Value.FirstOrDefault();
+                if (item == null) continue;
+
+                var fileImage = _fileUtils.GetLatestImage();
+                if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
+
+                Bitmap srcBmp;
+                using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                    srcBmp = new Bitmap(ms);
+
+                Bitmap boxed = null;
+                var all = new List<int>();
+                foreach (var v in kv.Value)
+                {
+                    if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
+                }
+
+                if (all.Count > 0)
+                {
+                    try { boxed = _imageUtil.DrawBoundingBoxMultiple(srcBmp, all); }
+                    catch (Exception ex) { Console.WriteLine("[DrawBoxes] " + ex.Message); }
+                }
+
+                imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                imgBox.Margin = new Padding(0);
+                imgBox.Image = boxed;
+                innerTable.RowCount = 1;
+
+                srcBmp.Dispose();
+
+                resultLbl.Text = item.Label ? "NG" : "Good";
+                parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
+
+                var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
+                if (dummy != null && dummy.Visible) dummy.Visible = false;
+
+                var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
+                if (string.IsNullOrEmpty(item.Value))
+                {
+                    if (valLbl != null) valLbl.Visible = false;
+                }
+                else
+                {
+                    if (valLbl == null)
+                    {
+                        valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
+                        innerTable.Controls.Add(valLbl);
+                    }
+                    valLbl.Text = "Value: " + item.Value;
+                    valLbl.Visible = true;
+                }
+            }
+
+            var final = parent.Controls.Find("finalLabel", true).FirstOrDefault() as Label;
+            if (final != null) final.Text = "Final Label: " + data.FinalLabel;
+
+            parent.ResumeLayout(true);
+        }
+
+        private void UpdateUiInspectionResultComponentInspection(Root data, Control parent)
+        {
+            if (data == null || data.Components == null) return;
+            parent.SuspendLayout();
+            int index = 1;
+
+            foreach (var kv in data.Components)
+            {
+                foreach (var value in kv.Value)
+                {
+                    int key = index;
+
+                    var imgBox = parent.Controls.Find("imgBox_" + key, true).FirstOrDefault() as PictureBox;
+                    var resultLbl = parent.Controls.Find("resultLbl_" + key, true).FirstOrDefault() as Label;
+                    var parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
+                    var innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
+
+                    if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) { index++; continue; }
+
+                    var item = kv.Value.FirstOrDefault();
+                    if (item == null) { index++; continue; }
+
+                    var fileImage = _fileUtils.GetLatestImage();
+                    if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) { index++; continue; }
+
+                    Bitmap srcBmp;
+                    using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                        srcBmp = new Bitmap(ms);
+
+                    Bitmap boxed = _imageUtil.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
+
+                    imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                    imgBox.Margin = new Padding(0);
+                    imgBox.Image = boxed;
+                    innerTable.RowCount = 1;
+
+                    srcBmp.Dispose();
+
+                    resultLbl.Text = item.Label ? "NG" : "Good";
+                    parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
+
+                    var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
+                    if (dummy != null && dummy.Visible) dummy.Visible = false;
+
+                    var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
+                    if (string.IsNullOrEmpty(item.Value))
+                    {
+                        if (valLbl != null) valLbl.Visible = false;
+                    }
+                    else
+                    {
+                        if (valLbl == null)
+                        {
+                            valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
+                            innerTable.Controls.Add(valLbl);
+                        }
+                        valLbl.Text = "Value: " + item.Value;
+                        valLbl.Visible = true;
+                    }
+
+                    index++;
+                }
+            }
+
+            var final = parent.Controls.Find("finalLabel", true).FirstOrDefault() as Label;
+            if (final != null) final.Text = "Final Label: " + data.FinalLabel;
+
+            parent.ResumeLayout(true);
+        }
+
+        private void BuildUiFirstTimeComponentInspection(Root data, FlowLayoutPanel parent)
+        {
+            parent.Controls.Clear();
+            int index = 1;
+
+            foreach (var kv in data.Components)
+            {
+                foreach (var _ in kv.Value)
+                {
+                    int key = index;
+
+                    var panel = new Panel
+                    {
+                        Name = "panel_" + key,
+                        Size = new System.Drawing.Size(185, 186),
+                        BackColor = Color.Transparent,
+                        Margin = new Padding(0, 0, 20, 20)
+                    };
+
+                    var outer = new TableLayoutPanel
+                    {
+                        ColumnCount = 1,
+                        RowCount = 2,
+                        Dock = DockStyle.Fill,
+                        Padding = new Padding(5),
+                        BackColor = Color.FromArgb(117, 120, 123)
+                    };
+                    outer.RowStyles.Add(new RowStyle(SizeType.Percent, 82.38636F));
+                    outer.RowStyles.Add(new RowStyle(SizeType.Percent, 17.61364F));
+                    outer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 169F));
+                    panel.Controls.Add(outer);
+
+                    var inner = new TableLayoutPanel
+                    {
+                        Name = "innerTable_" + key,
+                        ColumnCount = 1,
+                        RowCount = 2,
+                        Dock = DockStyle.Fill,
+                        BackColor = Color.Black
+                    };
+                    inner.RowStyles.Add(new RowStyle(SizeType.Percent, 75F));
+                    inner.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+
+                    var imgBox = new PictureBox
+                    {
+                        Name = "imgBox_" + key,
+                        Dock = DockStyle.Fill,
+                        SizeMode = PictureBoxSizeMode.Zoom,
+                        Image = Properties.Resources.NoImage
+                    };
+                    inner.Controls.Add(imgBox, 0, 0);
+
+                    var labelDummy = new Label
+                    {
+                        Text = "Result Inspection",
+                        ForeColor = Color.White,
+                        Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold),
+                        Anchor = AnchorStyles.None,
+                        AutoSize = true
+                    };
+                    inner.Controls.Add(labelDummy, 0, 1);
+
+                    outer.Controls.Add(inner, 0, 0);
+
+                    var parrot = new ReaLTaiizor.Controls.ParrotWidgetPanel
+                    {
+                        Name = "parrot_" + key,
+                        Dock = DockStyle.Fill,
+                        BackColor = Color.FromArgb(192, 0, 0),
+                        ControlsAsWidgets = false
+                    };
+                    outer.Controls.Add(parrot, 0, 1);
+
+                    var resultTable = new TableLayoutPanel
+                    {
+                        ColumnCount = 1,
+                        RowCount = 1,
+                        Dock = DockStyle.Fill,
+                        AutoSize = false
+                    };
+                    resultTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+                    resultTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+                    parrot.Controls.Add(resultTable);
+
+                    var resultLabel = new Label
+                    {
+                        Name = "resultLbl_" + key,
+                        Text = "Result Inspection",
+                        Dock = DockStyle.Fill,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                        TextAlign = ContentAlignment.MiddleCenter
+                    };
+                    resultTable.Controls.Add(resultLabel);
+
+                    parent.Controls.Add(panel);
+                    index++;
+                }
+            }
+
+            var finalLabel = new Label
+            {
+                Name = "finalLabel",
+                Text = "Final Label: " + data.FinalLabel,
+                Font = new Font("Consolas", 9, FontStyle.Italic),
+                ForeColor = Color.Blue,
+                AutoSize = true
+            };
+            parent.Controls.Add(finalLabel);
+        }
+
+        private void BuildUiFirstTime(Root data, FlowLayoutPanel parent)
+        {
+            parent.Controls.Clear();
+
+            foreach (var kv in data.Components)
+            {
+                string key = kv.Key;
+
+                var panel = new Panel
+                {
+                    Name = "panel_" + key,
+                    Size = new System.Drawing.Size(185, 186),
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(0, 0, 20, 20)
+                };
+
+                var outer = new TableLayoutPanel
+                {
+                    ColumnCount = 1,
+                    RowCount = 2,
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(5),
+                    BackColor = Color.FromArgb(117, 120, 123)
+                };
+                outer.RowStyles.Add(new RowStyle(SizeType.Percent, 82.38636F));
+                outer.RowStyles.Add(new RowStyle(SizeType.Percent, 17.61364F));
+                outer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 169F));
+                panel.Controls.Add(outer);
+
+                var inner = new TableLayoutPanel
+                {
+                    Name = "innerTable_" + key,
+                    ColumnCount = 1,
+                    RowCount = 2,
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.Black
+                };
+                inner.RowStyles.Add(new RowStyle(SizeType.Percent, 75F));
+                inner.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+
+                var imgBox = new PictureBox
+                {
+                    Name = "imgBox_" + key,
+                    Dock = DockStyle.Fill,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Image = Properties.Resources.NoImage
+                };
+                inner.Controls.Add(imgBox, 0, 0);
+
+                var labelDummy = new Label
+                {
+                    Text = "Result Inspection",
+                    ForeColor = Color.White,
+                    Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold),
+                    Anchor = AnchorStyles.None,
+                    AutoSize = true
+                };
+                inner.Controls.Add(labelDummy, 0, 1);
+
+                outer.Controls.Add(inner, 0, 0);
+
+                var parrot = new ReaLTaiizor.Controls.ParrotWidgetPanel
+                {
+                    Name = "parrot_" + key,
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.FromArgb(192, 0, 0),
+                    ControlsAsWidgets = false
+                };
+                outer.Controls.Add(parrot, 0, 1);
+
+                var resultTable = new TableLayoutPanel
+                {
+                    ColumnCount = 1,
+                    RowCount = 1,
+                    Dock = DockStyle.Fill,
+                    AutoSize = false
+                };
+                resultTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+                resultTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+                parrot.Controls.Add(resultTable);
+
+                var resultLabel = new Label
+                {
+                    Name = "resultLbl_" + key,
+                    Text = "Result Inspection",
+                    Dock = DockStyle.Fill,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleCenter
+                };
+                resultTable.Controls.Add(resultLabel);
+
+                parent.Controls.Add(panel);
+            }
+
+            var final = new Label
+            {
+                Name = "finalLabel",
+                Text = "Final Label: " + data.FinalLabel,
+                Font = new Font("Consolas", 9, FontStyle.Italic),
+                ForeColor = Color.Blue,
+                AutoSize = true
+            };
+            parent.Controls.Add(final);
+        }
+
+        // ------------- Misc buttons -------------
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Logs");
+            string filePath = Path.Combine(folder, "Inspection_20251010_113839.json");
+            LoadJsonToTable(filePath);
+        }
+
+        private void LoadJsonToTable(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                MessageBox.Show("File JSON tidak ditemukan: " + filePath);
+                return;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                var summary = JsonConvert.DeserializeObject<CycleTimeSummary>(json);
+
+                if (summary == null || summary.Logs == null || summary.Logs.Count == 0)
+                {
+                    MessageBox.Show("Tidak ada log untuk ditampilkan.");
+                    return;
+                }
+
+                dataGridView1.DataSource = summary.Logs;
+                dataGridView1.Columns["TransactionId"].HeaderText = "ID Transaksi";
+                dataGridView1.Columns["Timestamp"].HeaderText = "Waktu";
+                dataGridView1.Columns["CycleTimeMs"].HeaderText = "Cycle Time (ms)";
+                dataGridView1.Columns["RawResponse"].HeaderText = "Response";
+                dataGridView1.Columns["Pass"].HeaderText = "Pass/Fail";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal load JSON: " + ex.Message);
+            }
+        }
+
+        private void onShowGeneralMenu(object sender, EventArgs e) { if (parrotWidgetPanel2.Visible) { pictureBox1.Image = Properties.Resources.chevron_right; } else { pictureBox1.Image = Properties.Resources.chevron_down; } parrotWidgetPanel2.Visible = !parrotWidgetPanel2.Visible; }
+        private void onShowCameraMenu(object sender, EventArgs e) { if (parrotWidgetPanel4.Visible) { pictureBox7.Image = Properties.Resources.chevron_right; } else { pictureBox7.Image = Properties.Resources.chevron_down; } parrotWidgetPanel4.Visible = !parrotWidgetPanel4.Visible; }
+
+        private async void panel8_Click(object sender, EventArgs e)
+        {
+            await CaptureAndProcessOnceAsync();
+        }
+
+        private async void button1_Click(object sender, EventArgs e)
+        {
+            await CaptureAndProcessOnceAsync();
+        }
+
+        // Events required by original code
+        public event Action<byte[]> FrameEncoded;
+        public event Action<string> Error;
+    }
+}
