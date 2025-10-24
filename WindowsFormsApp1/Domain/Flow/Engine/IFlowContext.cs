@@ -17,6 +17,9 @@ namespace WindowsFormsApp1.Domain.Flow.Engine
         string Trigger { get; set; }
 
         ConcurrentDictionary<string, bool> Conditions { get; } // <-- baru
+        IntPtr DisplayHandle { get; set; }
+
+        IDictionary<string, object> Vars { get; }
     }
 
     public sealed class FlowContext : IFlowContext
@@ -30,5 +33,9 @@ namespace WindowsFormsApp1.Domain.Flow.Engine
 
         public ConcurrentDictionary<string, bool> Conditions { get; } =
        new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        public IntPtr DisplayHandle { get; set; }
+
+        public IDictionary<string, object> Vars { get; } = new Dictionary<string, object>();
     }
 }

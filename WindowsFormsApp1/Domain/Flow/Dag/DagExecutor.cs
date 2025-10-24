@@ -65,6 +65,12 @@ namespace WindowsFormsApp1.Domain.Flow.Dag
                             await WaitTriggerAsync(trigName, ct);
                         }
 
+                        // Parsing vars dari node saat ini
+                        //ParseVars(node);
+
+                        AutoMapContext(node);
+
+
                         // 2b. Execute by TYPE
                         await ExecuteNodeAsync(node, ct);
 
@@ -156,6 +162,35 @@ namespace WindowsFormsApp1.Domain.Flow.Dag
             {
                 await Task.Delay(50, ct);
                 ct.ThrowIfCancellationRequested();
+            }
+        }
+
+        private void ParseVars(DagNode node)
+        {
+            if (!node.Parameters.ContainsKey("vars")) return;
+            var vars = (Dictionary<string, string>)node.Parameters["vars"];
+            foreach (var kvp in vars)
+                _ctx.Vars[kvp.Key] = kvp.Value;   // tambah / update
+        }
+
+        private void AutoMapContext(DagNode node)
+        {
+            if (!node.Parameters.ContainsKey("autoMap") ||
+                !(bool)node.Parameters["autoMap"]) return;
+
+            var map = (Dictionary<string, string>)node.Parameters["map"];
+            var ctxType = typeof(IFlowContext);
+
+            foreach (var kvp in map)
+            {
+                string varKey = kvp.Key;           // key luar (bebas)
+                string ctxProp = kvp.Value;        // nama property di IFlowContext
+
+                var prop = ctxType.GetProperty(ctxProp);
+                if (prop == null) continue;
+
+                object value = prop.GetValue(_ctx);
+                _ctx.Vars[varKey] = value;         // masukkan ke Vars
             }
         }
 

@@ -54,6 +54,12 @@ namespace WindowsFormsApp1
             _cameraSdkAvailable = CheckCameraSdkAvailability();
         }
 
+        public IntPtr DisplayHandle
+        {
+            get => _displayHandle;
+            set => _displayHandle = value;
+        }
+
         private bool CheckCameraSdkAvailability()
         {
             try
@@ -85,7 +91,6 @@ namespace WindowsFormsApp1
 
         public bool Open(MyCamera.MV_CC_DEVICE_INFO device)
         {
-            // Check if camera SDK is available
             if (!_cameraSdkAvailable)
             {
                 Error?.Invoke("Camera SDK is not available!");
@@ -97,17 +102,22 @@ namespace WindowsFormsApp1
                 if (_isClosing || _isClosed) return false;
                 if (_deviceOpened) return true;
 
-                int r = _cam.MV_CC_CreateDevice_NET(ref device);
-                if (r != MyCamera.MV_OK)
+                Console.WriteLine($"[CAM] Creating device...");
+                int rCreate = _cam.MV_CC_CreateDevice_NET(ref device);
+                Console.WriteLine($"[CAM] CreateDevice result = 0x{rCreate:X}");
+                if (rCreate != MyCamera.MV_OK)
                 {
-                    Error?.Invoke("Create device fail!");
+                    Error?.Invoke($"Create device fail 0x{rCreate:X}");
                     return false;
                 }
 
-                r = _cam.MV_CC_OpenDevice_NET();
-                if (r != MyCamera.MV_OK)
+                Console.WriteLine($"[CAM] Opening device...");
+                int rOpen = _cam.MV_CC_OpenDevice_NET();
+                Console.WriteLine($"[CAM] OpenDevice result = 0x{rOpen:X}");
+                if (rOpen != MyCamera.MV_OK)
                 {
                     try { _cam.MV_CC_DestroyDevice_NET(); } catch { }
+                    Error?.Invoke($"Open device fail 0x{rOpen:X}");
                     return false;
                 }
 
@@ -124,6 +134,7 @@ namespace WindowsFormsApp1
                 }
 
                 _deviceOpened = true;
+                Console.WriteLine("[CAM] Device opened & ready");
                 return true;
             }
         }
@@ -142,6 +153,7 @@ namespace WindowsFormsApp1
             lock (_disposeLock)
             {
                 if (_isClosing || _isClosed) return MV_ERROR;
+                Console.WriteLine(_deviceOpened);
                 if (!_deviceOpened) return MV_ERROR;
 
                 _grabbing = true;

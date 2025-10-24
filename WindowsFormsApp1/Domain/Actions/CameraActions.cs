@@ -1,10 +1,14 @@
-﻿using System;
+﻿using MvCamCtrl.NET;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using WindowsFormsApp1.Domain.Flow.Engine;
 using WindowsFormsApp1.Services;
+using YamlDotNet.Core.Tokens;
 
 namespace WindowsFormsApp1.Domain.Actions
 {
@@ -18,11 +22,17 @@ namespace WindowsFormsApp1.Domain.Actions
         public CameraPrepareAction(CameraManager cam, IFlowContext ctx) {
             _cam = cam; 
             _ctx = ctx;
-                }
+        }
 
-        public Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
+        public Task ExecuteAsync(IFlowContext ctx, CancellationToken ct)
         {
-            int nRet = _cam.Start(); // internal guard sudah ada
+            // 2. Set handle display
+            if (ctx.DisplayHandle != IntPtr.Zero)
+                _cam.DisplayHandle = ctx.DisplayHandle;
+
+            // 3. Baru start
+            int ret = _cam.Start();
+
             return Task.CompletedTask;
         }
     }

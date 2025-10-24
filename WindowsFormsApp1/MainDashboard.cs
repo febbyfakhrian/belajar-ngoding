@@ -34,7 +34,6 @@ namespace WindowsFormsApp1
     public partial class MainDashboard : Form
     {
         // --------- Services / State ----------
-        private readonly CameraManager _cam = new CameraManager(new ConcurrentQueue<byte[]>());
         private readonly GrpcService _grpc = new GrpcService();
         private readonly ImageManipulationUtils _imageUtil = new ImageManipulationUtils();
         private readonly ImageGrabber _grabber = new ImageGrabber();
@@ -65,20 +64,19 @@ namespace WindowsFormsApp1
         private System.Timers.Timer _reconnectTimer;
         private IServiceProvider _provider;
         private IFlowContext _ctx;
+        private CameraManager _cam;
         private const int RECONNECT_INTERVAL_MS = 3000;
+
         public MainDashboard(IServiceProvider provider)
         {
             InitializeComponent();
             _provider = provider;
             _ctx = provider.GetRequiredService<IFlowContext>();
+            _cam = provider.GetRequiredService<CameraManager>(); // instance A
 
-            // Events
             _cam.Error += msg => MessageBox.Show(msg);
             _grabber.FramePreview += OnFramePreview;
             _grpc.OnDisconnected += ScheduleReconnect;
-
-            // Start camera background (non-blocking)
-            _ = Task.Run(delegate { _cam.Start(); });
 
             // Safe timer init
             _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS);
@@ -106,8 +104,7 @@ namespace WindowsFormsApp1
             showSidebarBtn.Visible = true;
             showSidebarBtn.BringToFront();
 
-            // Ensure camera display surface is set
-            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
+            _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia
         }
 
         private async void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -454,11 +451,11 @@ namespace WindowsFormsApp1
 
         private async void openCamera_Click(object sender, EventArgs e)
         {
-            if (isDebug.Checked)
-            {
-                StartDebugPreviewLoop();
-                return;
-            }
+            //if (isDebug.Checked)
+            //{
+            //    StartDebugPreviewLoop();
+            //    return;
+            //}
 
             if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
@@ -470,13 +467,15 @@ namespace WindowsFormsApp1
                 _deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
                 typeof(MyCamera.MV_CC_DEVICE_INFO));
 
+            _cam.Open(device);
+            Console.WriteLine(_deviceList.pDeviceInfo[cbDeviceList.SelectedIndex]);
+
             if (!_cam.Open(device))
             {
                 ShowErrorMsg("Failed to open device", 0);
+
                 return;
             }
-
-            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
         }
 
         private async void btnStartGrab_Click(object sender, EventArgs e)
@@ -489,10 +488,12 @@ namespace WindowsFormsApp1
             }
 
             _grabbing = true;
-            //nRet = _cam.Start();
-            _ctx.Trigger = "CAMERA_STARTED";
 
-            pictureBox5.Visible = false;
+            tableLayoutPanel9.RowCount = 1;
+            pictureBox5.Dock = DockStyle.Fill;
+            pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox5.Margin = new Padding(0);
+            pictureBox5.Padding = new Padding(0);
             labelCameraInspection.Visible = false;
 
             if (!isDebug.Checked)
@@ -504,11 +505,14 @@ namespace WindowsFormsApp1
 
             if (MyCamera.MV_OK != nRet)
             {
-                pictureBox5.Visible = true;
+                //pictureBox5.Visible = true;
                 labelCameraInspection.Visible = true;
                 _grabbing = false;
                 ShowErrorMsg("Start Grabbing Fail!", nRet);
             }
+
+            _ctx.Trigger = "CAMERA_STARTED";
+
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
@@ -561,7 +565,6 @@ namespace WindowsFormsApp1
 
         private void StartDebugPreviewLoop()
         {
-            _cam.SetDisplayHandle(tableLayoutPanel9.Handle);
             NecessaryOperBeforeGrab();
 
             labelCameraInspection.Visible = false;
@@ -603,26 +606,6 @@ namespace WindowsFormsApp1
                 catch (OperationCanceledException) { }
             });
         }
-
-        // ------------- PLC → Inspect pipeline -------------
-
-        private void SubscribePlcSignal()
-        {
-            // Subscribe once; handler executes on UI thread via BeginInvoke
-            //PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(async delegate
-            //{
-            //    if (string.IsNullOrWhiteSpace(lineRaw)) return;
-
-            //    string cmd = Encoding.ASCII.GetString(WritePLCAddress.READ).TrimEnd('\r', '\n');
-            //    string lineClean = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n").TrimEnd('\r', '\n');
-
-            //    if (string.Equals(cmd, lineClean, StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        await CaptureAndProcessOnceAsync();
-            //    }
-            //}));
-        }
-
         private async Task CaptureAndProcessOnceAsync()
         {
             // Wait one frame from CameraManager
@@ -686,8 +669,14 @@ namespace WindowsFormsApp1
 
         public void RenderComponentsUI(string json, Control parent)
         {
-            var result = JsonConvert.DeserializeObject<Root>(json);
+            var result = JsonConvert.DeserializeObject<Root>(GrpcResponseStore.LastResponse.Result);
+            Console.WriteLine(result.Components);
             if (result == null || result.Components == null) return;
+            if (parent.InvokeRequired)
+            {
+                parent.Invoke(new Action<string, Control>(RenderComponentsUI), json, parent);
+                return;
+            }
 
             if (componentResultInspectionRadioButton.Checked)
             {
@@ -696,6 +685,7 @@ namespace WindowsFormsApp1
             }
             else
             {
+                Console.WriteLine(result);
                 BuildUiFirstTime(result, flowLayoutPanel1);
                 UpdateUiInspectionResult(result, flowLayoutPanel1);
             }
@@ -959,6 +949,7 @@ namespace WindowsFormsApp1
 
         private void BuildUiFirstTime(Root data, FlowLayoutPanel parent)
         {
+
             parent.Controls.Clear();
 
             foreach (var kv in data.Components)

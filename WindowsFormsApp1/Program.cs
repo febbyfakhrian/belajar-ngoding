@@ -34,6 +34,9 @@ namespace AutoInspectionPlatform
 
             var provider = services.BuildServiceProvider();
 
+            var grpc = provider.GetRequiredService<GrpcService>();
+            if (!grpc.StartAsync().Result) Console.WriteLine("gRPC not ready");
+
             // 2. Jalankan DAG (fire-and-forget) → 1 baris
             _ = provider.RunDagInBackground("flowtest.json",
                                             maxDegree: 4,
@@ -97,6 +100,7 @@ namespace AutoInspectionPlatform
             s.AddSingleton<IFlowAction, PlcSendFailAction>();
             s.AddSingleton<IFlowAction, CameraPrepareAction>();
             s.AddSingleton<IFlowAction, CameraCaptureFrameAction>();
+            s.AddSingleton<IFlowAction, GrpcProcessImageAction>();
         }
 
         /*------------------ utils ------------------*/
