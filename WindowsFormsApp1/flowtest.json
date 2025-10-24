@@ -1,0 +1,57 @@
+{
+    "name": "InspectionFlow",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.LampOn" }
+        },
+        {
+            "id": "camera-started",
+            "type": "trigger",
+            "parameters": { "triggerName": "CAMERA_STARTED" }
+        },
+        {
+            "id": "camera-prepare",
+            "type": "action",
+            "parameters": { "actionKey": "Camera.Prepare" }
+        },
+        {
+            "id": "lamp-on",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.SubscribeRead" }
+        },
+        {
+            "id": "wait-data",
+            "type": "trigger",
+            "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+        },
+        {
+            "id": "pass",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.SendPass" }
+        }
+    ],
+    "connections": [
+        {
+            "from": "start",
+            "to": "camera-started"
+        },
+        {
+            "from": "camera-started",
+            "to": "camera-prepare"
+        },
+        {
+            "from": "camera-prepare",
+            "to": "lamp-on"
+        },
+        {
+            "from": "lamp-on",
+            "to": "wait-data"
+        },
+        {
+            "from": "wait-data",
+            "to": "pass"
+        }
+    ]
+}

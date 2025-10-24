@@ -22,7 +22,7 @@ namespace WindowsFormsApp1
         private InspectionLogger logger = new InspectionLogger(); // bisa diinisialisasi global/form
         private StringBuilder rxBuffer = new StringBuilder();
         private int _lineStart = 0;   // posisi awal baris saat ini
-        public static PlcOperation PlcHelper => Program.PlcHelper;
+        //public static PlcOperation PlcHelper => Program.PlcHelper;
 
         public PlcDialog()
         {
@@ -186,13 +186,13 @@ namespace WindowsFormsApp1
 
                 byte[] command = (byte[])field.GetValue(null);
 
-                if (!PlcHelper.IsOpen)
-                {
-                    MessageBox.Show("Serial port belum dibuka!");
-                    return;
-                }
+                //if (!PlcHelper.IsOpen)
+                //{
+                //    MessageBox.Show("Serial port belum dibuka!");
+                //    return;
+                //}
 
-                PlcHelper.SendCommand(command);
+                //PlcHelper.SendCommand(command);
                 Console.WriteLine($"[PLC] Sent {className}.{fieldName} → {Encoding.ASCII.GetString(command)}");
             }
             catch (Exception ex)
@@ -221,15 +221,15 @@ namespace WindowsFormsApp1
                     return;
                 }
 
-                PlcHelper.SetConfig(portName, Int32.Parse(baudRateTextBox.Text));
+                //PlcHelper.SetConfig(portName, Int32.Parse(baudRateTextBox.Text));
 
-                if (PlcHelper.IsOpen)
-                {
-                    PlcHelper.Close();
-                }
+                //if (PlcHelper.IsOpen)
+                //{
+                //    PlcHelper.Close();
+                //}
 
-                // Buat instance baru (atau reuse) dan buka
-                PlcHelper.Open();
+                //// Buat instance baru (atau reuse) dan buka
+                //PlcHelper.Open();
 
                 // Di constructor atau load:
                 //PlcHelper.LineReceived += line => BeginInvoke(new Action(() =>
@@ -249,18 +249,18 @@ namespace WindowsFormsApp1
 
         private void sendCommandBtn_Click(object sender, EventArgs e)
         {
-            if (!PlcHelper.IsOpen)
-            {
-                MessageBox.Show("Port belum dibuka!");
-                return;
-            }
+            //if (!PlcHelper.IsOpen)
+            //{
+            //    MessageBox.Show("Port belum dibuka!");
+            //    return;
+            //}
 
-            string cmd = inputCommandPlc.Text.Trim();
-            if (string.IsNullOrEmpty(cmd)) return;
+            //string cmd = inputCommandPlc.Text.Trim();
+            //if (string.IsNullOrEmpty(cmd)) return;
 
-            // Tambah terminator sesuai PLC
-            byte[] data = Encoding.ASCII.GetBytes(cmd + "\r");
-            PlcHelper.SendCommand(data);
+            //// Tambah terminator sesuai PLC
+            //byte[] data = Encoding.ASCII.GetBytes(cmd + "\r");
+            //PlcHelper.SendCommand(data);
         }
     }
 

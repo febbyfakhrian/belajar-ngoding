@@ -192,6 +192,7 @@ namespace WindowsFormsApp1.Services
         private void ParseChunk(string chunk)
         {
             if (string.IsNullOrEmpty(chunk)) return;
+            Console.WriteLine(chunk);
 
             lock (_rxBuffer) _rxBuffer.Append(chunk);
 

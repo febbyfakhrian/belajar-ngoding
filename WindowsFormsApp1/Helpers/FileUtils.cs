@@ -14,7 +14,10 @@ namespace WindowsFormsApp1.Helpers
 
         private static readonly BlockingCollection<FilePacket> _writeQueue = new BlockingCollection<FilePacket>(256);
 
-        private ImageDbOperation _imageDbOperation => AutoInspectionPlatform.Program.DbHelper;
+        private readonly ImageDbOperation _db;
+
+        public FileUtils(ImageDbOperation db) => _db = db;
+
 
         private sealed class FilePacket
         {
@@ -89,7 +92,7 @@ namespace WindowsFormsApp1.Helpers
             var dir = Path.Combine(
                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                    "CapturedFrames");
-            var fn = _imageDbOperation.FindById(imageId);
+            var fn = _db.FindById(imageId);
 
             return fn == null ? null : Path.Combine(dir, fn);
         }
@@ -99,7 +102,7 @@ namespace WindowsFormsApp1.Helpers
             var dir = Path.Combine(
                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                    "CapturedFrames");
-            var fn = _imageDbOperation.GetLatestImageById();
+            var fn = _db.GetLatestImageById();
 
             return fn == null ? null : Path.Combine(dir, fn);
         }

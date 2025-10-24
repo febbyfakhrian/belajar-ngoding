@@ -1,5 +1,6 @@
 using Api;
 using AutoInspectionPlatform;
+using Microsoft.Extensions.DependencyInjection;
 using MvCamCtrl.NET;
 using Newtonsoft.Json;
 using OpenCvSharp;
@@ -23,7 +24,6 @@ using WindowsFormsApp1.Domain.Flow.Engine;
 using WindowsFormsApp1.Helpers;
 using WindowsFormsApp1.Models;
 using WindowsFormsApp1.Services;
-using WindowsFormsApp1.Services.StateMachine;
 using static System.Net.Mime.MediaTypeNames;
 using static WindowsFormsApp1.VideoGrabber;
 using Label = System.Windows.Forms.Label;
@@ -38,10 +38,8 @@ namespace WindowsFormsApp1
         private readonly GrpcService _grpc = new GrpcService();
         private readonly ImageManipulationUtils _imageUtil = new ImageManipulationUtils();
         private readonly ImageGrabber _grabber = new ImageGrabber();
-        private readonly FileUtils _fileUtils = new FileUtils();
-        private ImageDbOperation _imageDb => Program.DbHelper;
-
-        private StatelessHost Host { get { return (StatelessHost)this.Tag; } }
+        //private readonly FileUtils _fileUtils = new FileUtils();
+        //private ImageDbOperation _imageDb => Program.DbHelper;
 
         // Hik SDK discovery store
         private MyCamera.MV_CC_DEVICE_INFO_LIST _deviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
@@ -65,11 +63,14 @@ namespace WindowsFormsApp1
 
         // Reconnect
         private System.Timers.Timer _reconnectTimer;
+        private IServiceProvider _provider;
+        private IFlowContext _ctx;
         private const int RECONNECT_INTERVAL_MS = 3000;
-
-        public MainDashboard()
+        public MainDashboard(IServiceProvider provider)
         {
             InitializeComponent();
+            _provider = provider;
+            _ctx = provider.GetRequiredService<IFlowContext>();
 
             // Events
             _cam.Error += msg => MessageBox.Show(msg);
@@ -93,10 +94,6 @@ namespace WindowsFormsApp1
             TryEnableDoubleBuffer(tableLayoutPanel9);
 
             DeviceListAcq();
-
-            // FSM entry
-            if (Host != null)
-                await Host.FireAsync("Start");
 
             // gRPC startup
             var ok = await _grpc.StartAsync();
@@ -329,65 +326,119 @@ namespace WindowsFormsApp1
             }
         }
 
-        public int NecessaryOperBeforeGrab()
+        public Int32 NecessaryOperBeforeGrab()
         {
             if (isDebug.Checked)
             {
-                // Simulated Mono8 1920x1080 buffer
-                const uint w = 1920, h = 1080;
+                Console.WriteLine("[DEBUG] Skipping SDK read, using simulated parameters...");
+
+                UInt32 fakeWidth = 1920;
+                UInt32 fakeHeight = 1080;
+                UInt32 fakePixelType = (UInt32)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono8;
+
                 _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
-                _convertDstBufLen = w * h;
-                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
-                _bitmap = new Bitmap((int)w, (int)h, _bitmapPixelFormat);
+                _convertDstBufLen = fakeWidth * fakeHeight;
+                _convertDstBuf = Marshal.AllocHGlobal((Int32)_convertDstBufLen);
+                _bitmap = new Bitmap((Int32)fakeWidth, (Int32)fakeHeight, _bitmapPixelFormat);
 
-                var pal = _bitmap.Palette;
-                for (int i = 0; i < pal.Entries.Length; i++) pal.Entries[i] = Color.FromArgb(i, i, i);
-                _bitmap.Palette = pal;
+                // Apply grayscale palette
+                ColorPalette palette = _bitmap.Palette;
+                for (int i = 0; i < palette.Entries.Length; i++)
+                    palette.Entries[i] = Color.FromArgb(i, i, i);
+                _bitmap.Palette = palette;
 
+                Console.WriteLine($"[DEBUG] Fake buffer created {fakeWidth}x{fakeHeight}, Mono8");
                 return MyCamera.MV_OK;
             }
-
-            // Live camera: query width/height/pixfmt via CameraManager wrapper
-            var stWidth = new MyCamera.MVCC_INTVALUE_EX();
-            var stHeight = new MyCamera.MVCC_INTVALUE_EX();
-            var stPixel = new MyCamera.MVCC_ENUMVALUE();
-
+            // ch:取图像宽 | en:Get Image Width
+            MyCamera.MVCC_INTVALUE_EX stWidth = new MyCamera.MVCC_INTVALUE_EX();
             int nRet = _cam.GetIntValueEx("Width", ref stWidth);
-            if (nRet != MyCamera.MV_OK) { OnError("Get Width Info Fail!"); return nRet; }
+            if (MyCamera.MV_OK != nRet)
+            {
+                Error?.Invoke("Get Width Info Fail!");
+                return nRet;
+            }
 
+            // ch:取图像高 | en:Get Image Height
+            MyCamera.MVCC_INTVALUE_EX stHeight = new MyCamera.MVCC_INTVALUE_EX();
             nRet = _cam.GetIntValueEx("Height", ref stHeight);
-            if (nRet != MyCamera.MV_OK) { OnError("Get Height Info Fail!"); return nRet; }
+            if (MyCamera.MV_OK != nRet)
+            {
+                Error?.Invoke("Get Height Info Fail!");
+                return nRet;
+            }
 
-            nRet = _cam.GetEnumValue("PixelFormat", ref stPixel);
-            if (nRet != MyCamera.MV_OK) { OnError("Get Pixel Format Fail!"); return nRet; }
+            // ch:取像素格式 | en:Get Pixel Format
+            MyCamera.MVCC_ENUMVALUE stPixelFormat = new MyCamera.MVCC_ENUMVALUE();
+            nRet = _cam.GetEnumValue("PixelFormat", ref stPixelFormat);
+            if (MyCamera.MV_OK != nRet)
+            {
+                Error?.Invoke("Get Pixel Format Fail!");
+                return nRet;
+            }
 
-            if ((int)MyCamera.MvGvspPixelType.PixelType_Gvsp_Undefined == (int)stPixel.nCurValue)
+            // ch:设置bitmap像素格式，申请相应大小内存 | en:Set Bitmap Pixel Format, alloc memory
+            if ((Int32)MyCamera.MvGvspPixelType.PixelType_Gvsp_Undefined == (Int32)stPixelFormat.nCurValue)
+            {
+                Error?.Invoke("Unknown Pixel Format!");
                 return MyCamera.MV_E_UNKNOW;
-
-            // allocate convert buffer
-            if (IsMono(stPixel.nCurValue))
+            }
+            else if (IsMono(stPixelFormat.nCurValue))
             {
                 _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
-                if (_convertDstBuf != IntPtr.Zero) Marshal.FreeHGlobal(_convertDstBuf);
-                _convertDstBufLen = (uint)(stWidth.nCurValue * stHeight.nCurValue);
-                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
+
+                if (IntPtr.Zero != _convertDstBuf)
+                {
+                    Marshal.Release(_convertDstBuf);
+                    _convertDstBuf = IntPtr.Zero;
+                }
+
+                // Mono8为单通道
+                _convertDstBufLen = (UInt32)(stWidth.nCurValue * stHeight.nCurValue);
+                _convertDstBuf = Marshal.AllocHGlobal((Int32)_convertDstBufLen);
+                if (IntPtr.Zero == _convertDstBuf)
+                {
+                    Error?.Invoke("Malloc Memory Fail!");
+                    return MyCamera.MV_E_RESOURCE;
+                }
             }
             else
             {
                 _bitmapPixelFormat = PixelFormat.Format24bppRgb;
-                if (_convertDstBuf != IntPtr.Zero) Marshal.FreeHGlobal(_convertDstBuf);
-                _convertDstBufLen = (uint)(3 * stWidth.nCurValue * stHeight.nCurValue);
-                _convertDstBuf = Marshal.AllocHGlobal((int)_convertDstBufLen);
+
+                if (IntPtr.Zero != _convertDstBuf)
+                {
+                    Marshal.FreeHGlobal(_convertDstBuf);
+                    _convertDstBuf = IntPtr.Zero;
+                }
+
+                // RGB为三通道
+                _convertDstBufLen = (UInt32)(3 * stWidth.nCurValue * stHeight.nCurValue);
+                _convertDstBuf = Marshal.AllocHGlobal((Int32)_convertDstBufLen);
+                if (IntPtr.Zero == _convertDstBuf)
+                {
+                    Error?.Invoke("Malloc Memory Fail!");
+                    return MyCamera.MV_E_RESOURCE;
+                }
             }
 
-            if (_bitmap != null) { _bitmap.Dispose(); _bitmap = null; }
-            _bitmap = new Bitmap((int)stWidth.nCurValue, (int)stHeight.nCurValue, _bitmapPixelFormat);
-
-            if (_bitmapPixelFormat == PixelFormat.Format8bppIndexed)
+            // 确保释放保存了旧图像数据的bitmap实例，用新图像宽高等信息new一个新的bitmap实例
+            if (null != _bitmap)
             {
-                var pal = _bitmap.Palette;
-                for (int i = 0; i < pal.Entries.Length; i++) pal.Entries[i] = Color.FromArgb(i, i, i);
-                _bitmap.Palette = pal;
+                _bitmap.Dispose();
+                _bitmap = null;
+            }
+            _bitmap = new Bitmap((Int32)stWidth.nCurValue, (Int32)stHeight.nCurValue, _bitmapPixelFormat);
+
+            // ch:Mono8格式，设置为标准调色板 | en:Set Standard Palette in Mono8 Format
+            if (PixelFormat.Format8bppIndexed == _bitmapPixelFormat)
+            {
+                ColorPalette palette = _bitmap.Palette;
+                for (int i = 0; i < palette.Entries.Length; i++)
+                {
+                    palette.Entries[i] = Color.FromArgb(i, i, i);
+                }
+                _bitmap.Palette = palette;
             }
 
             return MyCamera.MV_OK;
@@ -438,7 +489,8 @@ namespace WindowsFormsApp1
             }
 
             _grabbing = true;
-            nRet = _cam.Start();
+            //nRet = _cam.Start();
+            _ctx.Trigger = "CAMERA_STARTED";
 
             pictureBox5.Visible = false;
             labelCameraInspection.Visible = false;
@@ -448,6 +500,7 @@ namespace WindowsFormsApp1
                 //await Host.FireAsync("SignalRead");
                 //SubscribePlcSignal();
             }
+
 
             if (MyCamera.MV_OK != nRet)
             {
@@ -556,19 +609,18 @@ namespace WindowsFormsApp1
         private void SubscribePlcSignal()
         {
             // Subscribe once; handler executes on UI thread via BeginInvoke
-            PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(async delegate
-            {
-                if (string.IsNullOrWhiteSpace(lineRaw)) return;
+            //PlcDialog.PlcHelper.LineReceived += lineRaw => BeginInvoke(new Action(async delegate
+            //{
+            //    if (string.IsNullOrWhiteSpace(lineRaw)) return;
 
-                string cmd = Encoding.ASCII.GetString(WritePLCAddress.READ).TrimEnd('\r', '\n');
-                string lineClean = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n").TrimEnd('\r', '\n');
+            //    string cmd = Encoding.ASCII.GetString(WritePLCAddress.READ).TrimEnd('\r', '\n');
+            //    string lineClean = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n").TrimEnd('\r', '\n');
 
-                if (string.Equals(cmd, lineClean, StringComparison.OrdinalIgnoreCase))
-                {
-                    await Host.FireAsync("InspectFrame");
-                    await CaptureAndProcessOnceAsync();
-                }
-            }));
+            //    if (string.Equals(cmd, lineClean, StringComparison.OrdinalIgnoreCase))
+            //    {
+            //        await CaptureAndProcessOnceAsync();
+            //    }
+            //}));
         }
 
         private async Task CaptureAndProcessOnceAsync()
@@ -586,8 +638,8 @@ namespace WindowsFormsApp1
             // Persist & index
             string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string fileName = "frame_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + imageId + ".bmp";
-            await _fileUtils.SaveFrameToDiskAsync(frameBytes, fileName, imageId);
-            _imageDb.InsertImage(fileName, imageId);
+            //await _fileUtils.SaveFrameToDiskAsync(frameBytes, fileName, imageId);
+            //_imageDb.InsertImage(fileName, imageId);
 
             // Process via gRPC → render
             await _grpc.ProcessImageAsync(frameBytes, default(System.Threading.CancellationToken), imageId);
@@ -605,10 +657,10 @@ namespace WindowsFormsApp1
             var result = JsonConvert.DeserializeObject<Root>(GrpcResponseStore.LastResponse.Result);
             if (result == null) return;
 
-            if (result.FinalLabel)
-                PlcDialog.PlcHelper.SendCommand(WritePLCAddress.FAIL);
-            else
-                PlcDialog.PlcHelper.SendCommand(WritePLCAddress.PASS);
+            //if (result.FinalLabel)
+            //    PlcDialog.PlcHelper.SendCommand(WritePLCAddress.FAIL);
+            //else
+            //    PlcDialog.PlcHelper.SendCommand(WritePLCAddress.PASS);
         }
 
         // ------------- Reconnect -------------
@@ -663,59 +715,59 @@ namespace WindowsFormsApp1
                 var parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
                 var innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
 
-                if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
+                //if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
 
-                var item = kv.Value.FirstOrDefault();
-                if (item == null) continue;
+                //var item = kv.Value.FirstOrDefault();
+                //if (item == null) continue;
 
-                var fileImage = _fileUtils.GetLatestImage();
-                if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
+                ////var fileImage = _fileUtils.GetLatestImage();
+                //if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
 
-                Bitmap srcBmp;
-                using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
-                    srcBmp = new Bitmap(ms);
+                //Bitmap srcBmp;
+                //using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                //    srcBmp = new Bitmap(ms);
 
-                Bitmap boxed = null;
-                var all = new List<int>();
-                foreach (var v in kv.Value)
-                {
-                    if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
-                }
+                //Bitmap boxed = null;
+                //var all = new List<int>();
+                //foreach (var v in kv.Value)
+                //{
+                //    if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
+                //}
 
-                if (all.Count > 0)
-                {
-                    try { boxed = _imageUtil.DrawBoundingBoxMultiple(srcBmp, all); }
-                    catch (Exception ex) { Console.WriteLine("[DrawBoxes] " + ex.Message); }
-                }
+                //if (all.Count > 0)
+                //{
+                //    try { boxed = _imageUtil.DrawBoundingBoxMultiple(srcBmp, all); }
+                //    catch (Exception ex) { Console.WriteLine("[DrawBoxes] " + ex.Message); }
+                //}
 
-                imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
-                imgBox.Margin = new Padding(0);
-                imgBox.Image = boxed;
-                innerTable.RowCount = 1;
+                //imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                //imgBox.Margin = new Padding(0);
+                //imgBox.Image = boxed;
+                //innerTable.RowCount = 1;
 
-                srcBmp.Dispose();
+                //srcBmp.Dispose();
 
-                resultLbl.Text = item.Label ? "NG" : "Good";
-                parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
+                //resultLbl.Text = item.Label ? "NG" : "Good";
+                //parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
 
-                var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
-                if (dummy != null && dummy.Visible) dummy.Visible = false;
+                //var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
+                //if (dummy != null && dummy.Visible) dummy.Visible = false;
 
-                var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
-                if (string.IsNullOrEmpty(item.Value))
-                {
-                    if (valLbl != null) valLbl.Visible = false;
-                }
-                else
-                {
-                    if (valLbl == null)
-                    {
-                        valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
-                        innerTable.Controls.Add(valLbl);
-                    }
-                    valLbl.Text = "Value: " + item.Value;
-                    valLbl.Visible = true;
-                }
+                //var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
+                //if (string.IsNullOrEmpty(item.Value))
+                //{
+                //    if (valLbl != null) valLbl.Visible = false;
+                //}
+                //else
+                //{
+                //    if (valLbl == null)
+                //    {
+                //        valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
+                //        innerTable.Controls.Add(valLbl);
+                //    }
+                //    valLbl.Text = "Value: " + item.Value;
+                //    valLbl.Visible = true;
+                //}
             }
 
             var final = parent.Controls.Find("finalLabel", true).FirstOrDefault() as Label;
@@ -746,21 +798,21 @@ namespace WindowsFormsApp1
                     var item = kv.Value.FirstOrDefault();
                     if (item == null) { index++; continue; }
 
-                    var fileImage = _fileUtils.GetLatestImage();
-                    if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) { index++; continue; }
+                    //var fileImage = _fileUtils.GetLatestImage();
+                    //if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) { index++; continue; }
 
-                    Bitmap srcBmp;
-                    using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
-                        srcBmp = new Bitmap(ms);
+                    //Bitmap srcBmp;
+                    //using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                    //    srcBmp = new Bitmap(ms);
 
-                    Bitmap boxed = _imageUtil.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
+                    //Bitmap boxed = _imageUtil.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
 
-                    imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
-                    imgBox.Margin = new Padding(0);
-                    imgBox.Image = boxed;
-                    innerTable.RowCount = 1;
+                    //imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                    //imgBox.Margin = new Padding(0);
+                    //imgBox.Image = boxed;
+                    //innerTable.RowCount = 1;
 
-                    srcBmp.Dispose();
+                    //srcBmp.Dispose();
 
                     resultLbl.Text = item.Label ? "NG" : "Good";
                     parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);

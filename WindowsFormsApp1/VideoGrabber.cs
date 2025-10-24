@@ -1,12 +1,16 @@
 ﻿using OpenCvSharp;
-using OpenCvSharp.Extensions;
-using PhotoSauce.MagicScaler;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using OpenCvSharp.Extensions;
 using System.Windows.Forms;
+using PhotoSauce.MagicScaler;
 
 namespace WindowsFormsApp1
 {
@@ -51,7 +55,7 @@ namespace WindowsFormsApp1
             if (string.IsNullOrEmpty(_videoPath))
             {
                 MessageBox.Show("Video path has not been set. Use SetPath() before Start().");
-                return;
+            return;
             }
 
             _running = true;

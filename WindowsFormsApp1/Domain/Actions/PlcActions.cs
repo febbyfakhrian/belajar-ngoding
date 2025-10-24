@@ -16,7 +16,7 @@ namespace WindowsFormsApp1.Domain.Actions
         public PlcLampOnAction(PlcOperation plc) => _plc = plc;
         public Task ExecuteAsync(Flow.Engine.IFlowContext ctx, CancellationToken ct = default)
         {
-            Debug.WriteLine("sdfsd");
+            Debug.WriteLine("ini lampu hidup");
             if (_plc?.IsOpen == true) _plc.SendCommand(WritePLCAddress.NEXT);
             return Task.CompletedTask;
         }
@@ -49,18 +49,14 @@ namespace WindowsFormsApp1.Domain.Actions
     // Enable the PLC READ listener
     public sealed class PlcSubscribeReadAction : IFlowAction
     {
-        public string Key { get { return "Plc.SubscribeRead"; } }
+        public string Key => "Plc.SubscribeRead";
         private readonly PlcReadSubscription _sub;
-        private readonly ITriggerBus _bus;
 
-        public PlcSubscribeReadAction(PlcReadSubscription sub, ITriggerBus bus)
-        {
-            _sub = sub; _bus = bus;
-        }
+        public PlcSubscribeReadAction(PlcReadSubscription sub) => _sub = sub;
 
-        public Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default(CancellationToken))
+        public Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
         {
-            _sub.Subscribe(_bus);
+            _sub.Subscribe();        // mulai listening
             return Task.CompletedTask;
         }
     }
@@ -87,26 +83,28 @@ namespace WindowsFormsApp1.Domain.Actions
     {
         private readonly PlcOperation _plc;
         private readonly byte[] _readBytes;
-        private Action<string> _attachedHandler; // wrap to a stable delegate
+        private Action<string> _attachedHandler;
+        private readonly IFlowContext _ctx;
 
-        public PlcReadSubscription(PlcOperation plc)
+        public PlcReadSubscription(PlcOperation plc, IFlowContext ctx)
         {
             _plc = plc;
             _readBytes = WritePLCAddress.READ;
+            _ctx = ctx;
         }
 
-        public void Subscribe(ITriggerBus bus)
+        public void Subscribe()
         {
             if (_plc == null) return;
-            if (_attachedHandler != null) return; // already subscribed
-            Debug.WriteLine("sfdf");
+            if (_attachedHandler != null) return; // sudah subscribe
 
-            _attachedHandler = (lineRaw) =>
+            // 1. buat delegate dulu
+            _attachedHandler = async (lineRaw) =>
             {
-                // Always hop to fire triggers asynchronously
-                _ = HandleLineAsync(bus, lineRaw);
+                await HandleLineAsync(lineRaw);
             };
 
+            // 2. baru pasang ke event
             _plc.LineReceived += _attachedHandler;
         }
 
@@ -119,21 +117,21 @@ namespace WindowsFormsApp1.Domain.Actions
             _attachedHandler = null;
         }
 
-        private async Task HandleLineAsync(ITriggerBus bus, string lineRaw)
+        private async Task HandleLineAsync(string lineRaw)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(lineRaw)) return;
 
                 string cmd = Encoding.ASCII.GetString(_readBytes).TrimEnd('\r', '\n');
-                string lineClean = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n").TrimEnd('\r', '\n');
+                lineRaw = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n");
+                string lineClean = lineRaw.TrimEnd('\r', '\n');
 
-                if (string.Equals(cmd, lineClean, StringComparison.OrdinalIgnoreCase))
+                if (cmd.ToUpper().Equals(lineClean.ToUpper(), StringComparison.Ordinal))
                 {
                     Debug.WriteLine("read signal");
+                    _ctx.Trigger = "PLC_READ_RECEIVED";
                     // keep the original behavior: immediately run Inspect flow
-                    await bus.FireAsync("SignalRead");   // go WaitingSignal -> Grabbing (Camera.Prepare)
-                    await bus.FireAsync("InspectFrame"); // go Grabbing -> Inspecting (CaptureFrame+Grpc+Render)
                 }
             }
             catch

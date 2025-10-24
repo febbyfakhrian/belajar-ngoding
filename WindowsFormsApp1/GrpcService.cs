@@ -1,10 +1,11 @@
-using Api;
-using Google.Protobuf;
-using Grpc.Core;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Google.Protobuf;
+using Grpc.Core;
+using Api;
+using System.Windows.Forms;
 
 namespace WindowsFormsApp1
 {
@@ -30,13 +31,7 @@ namespace WindowsFormsApp1
 
             try
             {
-
-                var options = new List<ChannelOption>
-                {
-                    new ChannelOption(ChannelOptions.MaxSendMessageLength, 100 * 1024 * 1024), // 100 MB
-                    new ChannelOption(ChannelOptions.MaxReceiveMessageLength, 100 * 1024 * 1024)
-                };
-                _channel = new Channel(_host, ChannelCredentials.Insecure, options);
+                _channel = new Channel(_host, ChannelCredentials.Insecure);
                 await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(5)); // Wait until channel is ready
                 _client = new AutoInspect.AutoInspectClient(_channel);
                 Console.WriteLine("[Grpc] Connection SUCCESS.");
@@ -68,7 +63,7 @@ namespace WindowsFormsApp1
         }
 
         public async Task<ImageResponse> ProcessImageStreamAsync(IEnumerable<byte[]> images, CancellationToken ct = default)
-        {
+        {   
             if (_client == null) throw new InvalidOperationException("Not connected");
 
             var call = _client.ProcessImageStream(cancellationToken: ct);

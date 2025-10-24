@@ -5,7 +5,7 @@ transitions:
   - from: Idle
     trigger: Start
     to: Grabbing
-    onEnter: [Plc.LampOn, Plc.SubscribeRead]
+    onEnter: [Plc.LampOn, Plc.SubscribeRead, Camera.Prepare]
 
   - from: Grabbing
     trigger: SignalRead

@@ -1,0 +1,36 @@
+{
+  "Nodes": [
+    {
+      "Id": "start",
+      "Actions": [ "Plc.LampOn" ],
+      "DependsOn": []
+    },
+    {
+      "Id": "prepare-camera",
+      "Actions": [ "Camera.Prepare" ],
+      "DependsOn": [ "start" ]
+    },
+    {
+      "Id": "capture",
+      "Actions": [ "Camera.CaptureFrame" ],
+      "DependsOn": [ "prepare-camera" ]
+    },
+    {
+      "Id": "process",
+      "Actions": [ "Grpc.ProcessImage" ],
+      "DependsOn": [ "capture" ]
+    },
+    {
+      "Id": "pass-branch",
+      "Actions": [ "Plc.SendPass" ],
+      "DependsOn": [ "process" ],
+      "When": "Context.FinalLabel == false"
+    },
+    {
+      "Id": "fail-branch",
+      "Actions": [ "Plc.SendFail" ],
+      "DependsOn": [ "process" ],
+      "When": "Context.FinalLabel == true"
+    }
+  ]
+}
