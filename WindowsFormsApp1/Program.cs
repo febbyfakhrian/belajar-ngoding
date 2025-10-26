@@ -1,19 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Configuration;
 using System.Data.SQLite;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using WindowsFormsApp1;
-using WindowsFormsApp1.Domain.Actions;
-using WindowsFormsApp1.Domain.Flow.Dag;
-using WindowsFormsApp1.Domain.Flow.Engine;
-using WindowsFormsApp1.Helpers;
+using WindowsFormsApp1.Core.Domain.Actions;
+using WindowsFormsApp1.Core.Domain.Flow.Engine;
 using WindowsFormsApp1.Infrastructure.Di;
-using WindowsFormsApp1.Services;
+using WindowsFormsApp1.Infrastructure.Hardware.PLC;
+using WindowsFormsApp1.Core.Interfaces;
+using WindowsFormsApp1.Infrastructure.Services.Services;
 
 namespace AutoInspectionPlatform
 {
@@ -24,83 +22,94 @@ namespace AutoInspectionPlatform
         [STAThread]
         static void Main()
         {
-            // 1. Build services once
-            var services = new ServiceCollection();
-            ConfigureSharedServices(services);     // DB + Settings
-            ConfigurePlcServices(services);        // PLC
-            ConfigureCameraServices(services);     // Camera
-            ConfigureAiServices(services);         // AI / gRPC
-            ConfigureFlowServices(services);       // DAG context & registry
+            try
+            {
+                // 1. Build services once
+                var services = new ServiceCollection();
+                string connectionString = $"Data Source={GetDatabasePath()};Version=3;";
+                
+                Console.WriteLine("Registering application services...");
+                services.AddApplicationServices(connectionString); // Register our new services
+                
+                Console.WriteLine("Configuring PLC services...");
+                ConfigurePlcServices(services);        // PLC
 
-            var provider = services.BuildServiceProvider();
+                Console.WriteLine("Building service provider...");
+                var provider = services.BuildServiceProvider();
 
-            var grpc = provider.GetRequiredService<GrpcService>();
-            if (!grpc.StartAsync().Result) Console.WriteLine("gRPC not ready");
+                Console.WriteLine("Configuring PLC after build...");
+                // Configure PLC after service provider is built
+                ConfigurePlcAfterBuild(provider);
 
-            // 2. Jalankan DAG (fire-and-forget) → 1 baris
-            _ = provider.RunDagInBackground("flowtest.json",
-                                            maxDegree: 4,
-                                            CancellationToken.None);
+                Console.WriteLine("Getting gRPC service...");
+                var grpc = provider.GetRequiredService<IGrpcService>();
+                if (!grpc.StartAsync().Result) Console.WriteLine("gRPC not ready");
 
-            // 3. Start UI
-            Application.Run(new MainDashboard(provider));
-        }
+                // 2. Jalankan DAG (fire-and-forget) → 1 baris
+                Console.WriteLine("Running DAG in background...");
+                _ = provider.RunDagInBackground("looping-flow.json",
+                                                maxDegree: 4,
+                                                CancellationToken.None);
 
-        /*-------------- modular service registration --------------*/
-        static void ConfigureSharedServices(IServiceCollection s)
-        {
-            DbConnection = new SQLiteConnection($"Data Source={GetDatabasePath()};Version=3;");
-            DbConnection.Open();
-
-            s.AddSingleton(DbConnection);
-            s.AddSingleton(new ImageDbOperation(DbConnection));
-            s.AddSingleton<SettingsOperation>();
-            s.AddSingleton<FileUtils>();
+                // 3. Start UI
+                Console.WriteLine("Starting application...");
+                Application.Run(new MainDashboard(provider));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception occurred: {ex}");
+                Console.WriteLine($"Exception type: {ex.GetType()}");
+                Console.WriteLine($"Exception message: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         static void ConfigurePlcServices(IServiceCollection s)
         {
-            var settings = s.BuildServiceProvider().GetRequiredService<SettingsOperation>();
-            var port = settings.GetSetting<string>("plc", "serial_port");
-            var baud = settings.GetSetting<int>("plc", "baud_rate");
-
-            PlcOperation plc = null;
-            if (!string.IsNullOrWhiteSpace(port) && baud > 0)
+            Console.WriteLine("Registering IPlcService...");
+            s.AddSingleton<IPlcService, PlcOperation>();
+            Console.WriteLine("Registering PlcReadSubscription...");
+            s.AddSingleton<PlcReadSubscription>((provider) => 
+                new PlcReadSubscription(provider.GetService<IPlcService>(), provider.GetRequiredService<IFlowContext>()));
+        }
+        
+        static void ConfigurePlcAfterBuild(IServiceProvider provider)
+        {
+            Console.WriteLine("Configuring PLC after build...");
+            var plc = provider.GetService<IPlcService>() as PlcOperation;
+            if (plc != null)
             {
-                plc = new PlcOperation(port, baud);
-                if (plc.DeviceExists()) plc.Open();
+                Console.WriteLine("PLC service found, getting settings...");
+                var settings = provider.GetRequiredService<ISettingsService>();
+                var port = settings.GetSetting<string>("plc", "serial_port");
+                var baud = settings.GetSetting<int>("plc", "baud_rate");
+                
+                Console.WriteLine($"PLC settings - Port: {port}, Baud: {baud}");
+                if (!string.IsNullOrWhiteSpace(port) && baud > 0)
+                {
+                    Console.WriteLine("Setting PLC config...");
+                    plc.SetConfig(port, baud);
+                    Console.WriteLine("Checking if PLC device exists...");
+                    if (plc.DeviceExists()) 
+                    {
+                        Console.WriteLine("Opening PLC connection...");
+                        plc.Open();
+                    }
+                    else
+                    {
+                        Console.WriteLine("PLC device does not exist, skipping open.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("PLC settings are invalid, skipping configuration.");
+                }
             }
-            s.AddSingleton(plc);
-            s.AddSingleton<PlcReadSubscription>();
-
-            // ➜➜➜  action-nya baru diregister di sini
-            s.AddSingleton<IFlowAction, PlcSubscribeReadAction>();
-        }
-
-        static void ConfigureCameraServices(IServiceCollection s)
-        {
-            s.AddSingleton<CameraManager>(_ => new CameraManager(new System.Collections.Concurrent.ConcurrentQueue<byte[]>()));
-        }
-
-        static void ConfigureAiServices(IServiceCollection s)
-        {
-            s.AddSingleton<GrpcService>();
-        }
-
-        static void ConfigureFlowServices(IServiceCollection s)
-        {
-            // context & infra
-            s.AddSingleton<IFlowContext, FlowContext>();
-            s.AddSingleton<IActionRegistry, ActionRegistry>();
-            s.AddSingleton<PlcReadSubscription>();
-
-            // ---------- CORE ACTIONS (jangan lupa!) ----------
-            s.AddSingleton<IFlowAction, PlcLampOnAction>();
-            s.AddSingleton<IFlowAction, PlcSendPassAction>();
-            s.AddSingleton<IFlowAction, PlcSendFailAction>();
-            s.AddSingleton<IFlowAction, CameraPrepareAction>();
-            s.AddSingleton<IFlowAction, CameraCaptureFrameAction>();
-            s.AddSingleton<IFlowAction, GrpcProcessImageAction>();
+            else
+            {
+                Console.WriteLine("PLC service not found or not PlcOperation type.");
+            }
         }
 
         /*------------------ utils ------------------*/

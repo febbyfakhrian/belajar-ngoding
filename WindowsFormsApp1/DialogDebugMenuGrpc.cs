@@ -7,8 +7,10 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WindowsFormsApp1.Helpers;
-using static WindowsFormsApp1.VideoGrabber;
+using WindowsFormsApp1.Core.Common.Helpers;
+using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
+using WindowsFormsApp1.Infrastructure.Hardware.Camera;
+using static WindowsFormsApp1.Core.Common.Helpers.VideoGrabber;
 
 namespace WindowsFormsApp1
 {

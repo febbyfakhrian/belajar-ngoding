@@ -76,9 +76,13 @@
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Add a conditional compilation symbol for the loop demo -->
+    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);LOOP_DEMO</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ConcurrentCollections, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ConcurrentHashSet.1.1.0\lib\net461\ConcurrentCollections.dll</HintPath>
+      <HintPath>..\packages\ConcurrentCollections.1.1.0\lib\net461\ConcurrentCollections.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.21.12.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Protobuf.3.21.12\lib\net45\Google.Protobuf.dll</HintPath>
@@ -195,9 +199,6 @@
       <HintPath>..\packages\System.Data.SQLite.2.0.2\lib\net471\System.Data.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="System.Design" />
-    <Reference Include="System.Diagnostics.DiagnosticSource, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.9.0.0\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
-    </Reference>
     <Reference Include="System.Drawing.Common, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Drawing.Common.8.0.11\lib\net462\System.Drawing.Common.dll</HintPath>
     </Reference>
@@ -329,41 +330,71 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CameraManager.cs" />
+    <Compile Include="Core\Common\Configuration\AppSettings.cs" />
+    <Compile Include="Core\Common\Configuration\ConfigurationNotifier.cs" />
+    <Compile Include="Core\Common\Configuration\ConfigurationProvider.cs" />
+    <Compile Include="Core\Common\Configuration\ConfigurationValidator.cs" />
+    <Compile Include="Core\Common\Exceptions\CameraException.cs" />
+    <Compile Include="Core\Common\Exceptions\GrpcException.cs" />
+    <Compile Include="Core\Common\Exceptions\PlcException.cs" />
+    <Compile Include="Core\Common\Logging\ConsoleLogger.cs" />
+    <Compile Include="Core\Common\Logging\ILogger.cs" />
+    <Compile Include="Core\Domain\Actions\BaseAction.cs" />
+    <Compile Include="Core\Domain\Actions\LoopActions.cs" />
+    <Compile Include="Core\Interfaces\ICameraService.cs" />
+    <Compile Include="Core\Interfaces\IGrpcService.cs" />
+    <Compile Include="Core\Interfaces\IHealthCheckService.cs" />
+    <Compile Include="Core\Interfaces\IPlcService.cs" />
+    <Compile Include="Core\Interfaces\ISettingsService.cs" />
     <Compile Include="DialogDebugMenuGrpc.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="DialogDebugMenuGrpc.Designer.cs">
       <DependentUpon>DialogDebugMenuGrpc.cs</DependentUpon>
     </Compile>
-    <Compile Include="Domain\Actions\CameraActions.cs" />
-    <Compile Include="Domain\Actions\GrpcActions.cs" />
-    <Compile Include="Domain\Actions\PlcActions.cs" />
-    <Compile Include="Domain\Flow\Dag\DagDefinition.cs" />
-    <Compile Include="Domain\Flow\Dag\DagExecutor.cs" />
-    <Compile Include="Domain\Flow\Dag\DagFlowLoader.cs" />
-    <Compile Include="Domain\Flow\Engine\ActionRegistry.cs" />
-    <Compile Include="Domain\Flow\Engine\IActionRegistry.cs" />
-    <Compile Include="Domain\Flow\Engine\IFlowAction.cs" />
-    <Compile Include="Domain\Flow\Engine\IFlowContext.cs" />
-    <Compile Include="Domain\Flow\Yaml\FlowValidator.cs" />
-    <Compile Include="Domain\Flow\Yaml\YamlFlowDefinition.cs" />
-    <Compile Include="Domain\Flow\Yaml\YamlFlowLoader.cs" />
-    <Compile Include="Helpers\ImageGrabber.cs" />
-    <Compile Include="Helpers\ImageManipulationUtils.cs" />
+    <Compile Include="Core\Domain\Actions\CameraActions.cs" />
+    <Compile Include="Core\Domain\Actions\GrpcActions.cs" />
+    <Compile Include="Core\Domain\Actions\PlcActions.cs" />
+    <Compile Include="Core\Domain\Flow\Dag\DagDefinition.cs" />
+    <Compile Include="Core\Domain\Flow\Dag\DagExecutor.cs" />
+    <Compile Include="Core\Domain\Flow\Dag\DagFlowLoader.cs" />
+    <Compile Include="Core\Domain\Flow\Engine\ActionRegistry.cs" />
+    <Compile Include="Core\Domain\Flow\Engine\IActionRegistry.cs" />
+    <Compile Include="Core\Domain\Flow\Engine\IFlowAction.cs" />
+    <Compile Include="Core\Domain\Flow\Engine\IFlowContext.cs" />
+    <Compile Include="Core\Domain\Flow\Yaml\FlowValidator.cs" />
+    <Compile Include="Core\Domain\Flow\Yaml\YamlFlowDefinition.cs" />
+    <Compile Include="Core\Domain\Flow\Yaml\YamlFlowLoader.cs" />
+    <Compile Include="Core\Common\Helpers\ImageGrabber.cs" />
+    <Compile Include="Core\Common\Helpers\ImageManipulationUtils.cs" />
+    <Compile Include="Infrastructure\Di\CommonServiceRegistration.cs" />
+    <Compile Include="Infrastructure\Di\DataServiceRegistration.cs" />
+    <Compile Include="Infrastructure\Di\DomainServiceRegistration.cs" />
+    <Compile Include="Infrastructure\Di\HardwareServiceRegistration.cs" />
+    <Compile Include="Infrastructure\Di\LoggingServiceRegistration.cs" />
     <Compile Include="Infrastructure\Di\ServiceRegistration.cs" />
-    <Compile Include="Models\IAutoInspectClient.cs" />
-    <Compile Include="Models\InspectionContext.cs" />
-    <Compile Include="Models\StateMachine.cs" />
-    <Compile Include="Models\WorkflowModels.cs" />
-    <Compile Include="Forms\Dialogs\SettingsMenu\PlcDialog.cs">
+    <Compile Include="Core\Entities\Models\IAutoInspectClient.cs" />
+    <Compile Include="Core\Entities\Models\InspectionContext.cs" />
+    <Compile Include="Core\Entities\Models\StateMachine.cs" />
+    <Compile Include="Core\Entities\Models\WorkflowModels.cs" />
+    <Compile Include="Infrastructure\Hardware\Camera\CameraAdapter.cs" />
+    <Compile Include="Infrastructure\Hardware\Camera\CameraManager.cs" />
+    <Compile Include="Infrastructure\Hardware\Camera\CameraServiceFactory.cs" />
+    <Compile Include="Infrastructure\Hardware\Grpc\GrpcServiceFactory.cs" />
+    <Compile Include="Infrastructure\Hardware\PLC\PlcOperation.cs" />
+    <Compile Include="Infrastructure\Hardware\PLC\PlcServiceFactory.cs" />
+    <Compile Include="Infrastructure\Services\HealthCheckService.cs" />
+    <Compile Include="Infrastructure\Services\Services\GrpcService.cs" />
+    <Compile Include="Infrastructure\Services\Services\ImageDbOperation.cs" />
+    <Compile Include="Infrastructure\Services\Services\InspectionLogger.cs" />
+    <Compile Include="Infrastructure\Services\Services\SettingsOperation.cs" />
+    <Compile Include="MVCamera.cs" />
+    <Compile Include="PLCCommand.cs" />
+    <Compile Include="Presentation\Forms\BaseForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\PlcDialog.Designer.cs">
-      <DependentUpon>PlcDialog.cs</DependentUpon>
-    </Compile>
     <Compile Include="GrpcResponseStore.cs" />
-    <Compile Include="Helpers\FileUtils.cs" />
+    <Compile Include="Core\Common\Helpers\FileUtils.cs" />
     <Compile Include="MainDashboard.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -388,63 +419,64 @@
     <Compile Include="LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.cs">
+    <Compile Include="Core\Entities\Models\ApiResponse.cs" />
+    <Compile Include="Core\Entities\Models\ComponentItem.cs" />
+    <Compile Include="Core\Entities\Models\Components.cs" />
+    <Compile Include="Core\Entities\Models\CycleLog.cs" />
+    <Compile Include="Core\Entities\Models\CycleTimeReport.cs" />
+    <Compile Include="Core\Entities\Models\CycleTimeSummary.cs" />
+    <Compile Include="Core\Entities\Models\InspectionResult.cs" />
+    <Compile Include="Core\Entities\Models\Root.cs" />
+    <Compile Include="Presentation\Forms\SettingsMenu\CameraDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.Designer.cs">
-      <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
+    <Compile Include="Presentation\Forms\SettingsMenu\CameraDialog.Designer.cs">
+      <DependentUpon>CameraDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\MESDialog.cs">
+    <Compile Include="Presentation\Forms\SettingsMenu\DatabaseDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\MESDialog.Designer.cs">
-      <DependentUpon>MESDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Models\ApiResponse.cs" />
-    <Compile Include="Models\ComponentItem.cs" />
-    <Compile Include="Models\Components.cs" />
-    <Compile Include="Models\CycleLog.cs" />
-    <Compile Include="Models\CycleTimeReport.cs" />
-    <Compile Include="Models\CycleTimeSummary.cs" />
-    <Compile Include="Models\InspectionResult.cs" />
-    <Compile Include="Models\Root.cs" />
-    <Compile Include="MVCamera.cs" />
-    <Compile Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.Designer.cs">
+    <Compile Include="Presentation\Forms\SettingsMenu\DatabaseDialog.Designer.cs">
       <DependentUpon>DatabaseDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\PathLogDialog.cs">
+    <Compile Include="Presentation\Forms\SettingsMenu\MESConfirmationDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\PathLogDialog.Designer.cs">
+    <Compile Include="Presentation\Forms\SettingsMenu\MESConfirmationDialog.Designer.cs">
+      <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\MESDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\MESDialog.Designer.cs">
+      <DependentUpon>MESDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\PathLogDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\PathLogDialog.Designer.cs">
       <DependentUpon>PathLogDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="PLCCommand.cs" />
+    <Compile Include="Presentation\Forms\SettingsMenu\PlcDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\PlcDialog.Designer.cs">
+      <DependentUpon>PlcDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\ViewModels\BaseViewModel.cs" />
+    <Compile Include="Presentation\ViewModels\SettingsViewModel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultDTO.cs" />
-    <Compile Include="Forms\Dialogs\SettingsMenu\CameraDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\Dialogs\SettingsMenu\CameraDialog.Designer.cs">
-      <DependentUpon>CameraDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Helpers\VideoGrabber.cs" />
-    <Compile Include="Services\CameraService.cs" />
-    <Compile Include="Services\CycleTimer.cs" />
-    <Compile Include="Services\GrpcService.cs" />
-    <Compile Include="Services\ImageDbOperation.cs" />
-    <Compile Include="Services\InspectionLogger.cs" />
-    <Compile Include="Services\PlcOperation.cs" />
-    <Compile Include="Services\RunDagExtensions.cs" />
-    <Compile Include="Services\SettingsOperation.cs" />
+    <Compile Include="Core\Common\Helpers\VideoGrabber.cs" />
+    <Compile Include="Infrastructure\Services\Services\CameraService.cs" />
+    <Compile Include="Infrastructure\Services\Services\CycleTimer.cs" />
+    <Compile Include="Infrastructure\Hardware\Grpc\GrpcService.cs" />
+    <Compile Include="Infrastructure\Services\Services\PlcOperation.cs" />
+    <Compile Include="Infrastructure\Services\Services\RunDagExtensions.cs" />
+    <Compile Include="Infrastructure\Data\SettingsOperation.cs" />
     <EmbeddedResource Include="DialogDebugMenuGrpc.resx">
       <DependentUpon>DialogDebugMenuGrpc.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\PlcDialog.resx">
-      <DependentUpon>PlcDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainDashboard.resx">
       <DependentUpon>MainDashboard.cs</DependentUpon>
@@ -458,17 +490,23 @@
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\MESConfirmationDialog.resx">
-      <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\CameraDialog.resx">
+      <DependentUpon>CameraDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\MESDialog.resx">
-      <DependentUpon>MESDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\DatabaseDialog.resx">
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\DatabaseDialog.resx">
       <DependentUpon>DatabaseDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\PathLogDialog.resx">
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\MESConfirmationDialog.resx">
+      <DependentUpon>MESConfirmationDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\MESDialog.resx">
+      <DependentUpon>MESDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\PathLogDialog.resx">
       <DependentUpon>PathLogDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\PlcDialog.resx">
+      <DependentUpon>PlcDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -480,9 +518,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="Forms\Dialogs\SettingsMenu\CameraDialog.resx">
-      <DependentUpon>CameraDialog.cs</DependentUpon>
-    </EmbeddedResource>
     <None Include="dagflow.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -496,6 +531,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="inspectionflow.json" />
+    <None Include="looping-flow.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -547,7 +585,10 @@
   <ItemGroup>
     <None Include="Resources\NoImage.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Core\Enums\" />
+    <Folder Include="Presentation\Controls\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="ILLink\ILLink.Descriptors.LibraryBuild.xml" />
   </ItemGroup>

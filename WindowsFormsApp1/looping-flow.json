@@ -1,5 +1,5 @@
 {
-    "name": "InspectionFlow",
+    "name": "LoopingInspectionFlow",
     "nodes": [
         {
             "id": "start",
@@ -22,23 +22,33 @@
             "parameters": { "actionKey": "Plc.SubscribeRead" }
         },
         {
-            "id": "inspection-loop",
-            "type": "loop",
+            "id": "loop-start",
+            "type": "loop-start",
             "parameters": { 
-                "triggerName": "PLC_READ_RECEIVED",
-                "maxIterations": 5,
-                "loopNodes": ["pass", "send-grpc"]
+                "maxIterations": 2
             }
         },
         {
-            "id": "pass",
+            "id": "wait-trigger",
+            "type": "trigger",
+            "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+        },
+        {
+            "id": "capture-frame",
             "type": "action",
             "parameters": { "actionKey": "Camera.CaptureFrame" }
         },
         {
-            "id": "send-grpc",
+            "id": "process-image",
             "type": "action",
             "parameters": { "actionKey": "Grpc.ProcessImage" }
+        },
+        {
+            "id": "loop-end",
+            "type": "loop-end",
+            "parameters": { 
+                "loopRef": "loop-start"
+            }
         }
     ],
     "connections": [
@@ -56,15 +66,27 @@
         },
         {
             "from": "lamp-on",
-            "to": "inspection-loop"
+            "to": "loop-start"
         },
         {
-            "from": "inspection-loop",
-            "to": "pass"
+            "from": "loop-start",
+            "to": "wait-trigger"
         },
         {
-            "from": "pass",
-            "to": "send-grpc"
+            "from": "wait-trigger",
+            "to": "capture-frame"
+        },
+        {
+            "from": "capture-frame",
+            "to": "process-image"
+        },
+        {
+            "from": "process-image",
+            "to": "loop-end"
+        },
+        {
+            "from": "loop-end",
+            "to": "wait-trigger"
         }
     ]
 }

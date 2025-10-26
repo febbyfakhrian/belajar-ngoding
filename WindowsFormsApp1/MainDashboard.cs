@@ -20,14 +20,14 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WindowsFormsApp1.Domain.Flow.Engine;
-using WindowsFormsApp1.Helpers;
-using WindowsFormsApp1.Models;
-using WindowsFormsApp1.Services;
-using static System.Net.Mime.MediaTypeNames;
-using static WindowsFormsApp1.VideoGrabber;
+using WindowsFormsApp1.Infrastructure.Hardware.Camera;
 using Label = System.Windows.Forms.Label;
 using Panel = System.Windows.Forms.Panel;
+using WindowsFormsApp1.Core.Common.Helpers;
+using WindowsFormsApp1.Core.Domain.Flow.Engine;
+using WindowsFormsApp1.Core.Entities.Models;
+using static WindowsFormsApp1.Core.Common.Helpers.VideoGrabber;
+using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
 
 namespace WindowsFormsApp1
 {
@@ -66,12 +66,14 @@ namespace WindowsFormsApp1
         private IFlowContext _ctx;
         private CameraManager _cam;
         private const int RECONNECT_INTERVAL_MS = 3000;
+        private FileUtils _fileUtils;
 
         public MainDashboard(IServiceProvider provider)
         {
             InitializeComponent();
             _provider = provider;
             _ctx = provider.GetRequiredService<IFlowContext>();
+            _fileUtils = provider.GetRequiredService<FileUtils>();
             _cam = provider.GetRequiredService<CameraManager>(); // instance A
 
             _cam.Error += msg => MessageBox.Show(msg);
@@ -79,8 +81,11 @@ namespace WindowsFormsApp1
             _grpc.OnDisconnected += ScheduleReconnect;
 
             // Safe timer init
-            _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS);
-            _reconnectTimer.AutoReset = true;
+            _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS)
+            {
+                AutoReset = true
+            };
+
             _reconnectTimer.Elapsed += (s, e) => TryGrpcReconnect();
         }
 
@@ -240,6 +245,7 @@ namespace WindowsFormsApp1
 
                 if (_deviceList.nDeviceNum != 0)
                     cbDeviceList.SelectedIndex = 0;
+
             }
             catch (Exception ex)
             {
@@ -468,7 +474,6 @@ namespace WindowsFormsApp1
                 typeof(MyCamera.MV_CC_DEVICE_INFO));
 
             _cam.Open(device);
-            Console.WriteLine(_deviceList.pDeviceInfo[cbDeviceList.SelectedIndex]);
 
             if (!_cam.Open(device))
             {
@@ -512,7 +517,6 @@ namespace WindowsFormsApp1
             }
 
             _ctx.Trigger = "CAMERA_STARTED";
-
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
@@ -548,12 +552,14 @@ namespace WindowsFormsApp1
 
         private void databaseToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            new DatabaseDialog().Show();
+            var dialog = new DatabaseDialog(_provider);
+            dialog.Show();
         }
 
         private void pLCToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            new PlcDialog().Show();
+            var dialog = new PlcDialog(_provider);
+            dialog.Show();
         }
 
         // ------------- Preview / Debug -------------
@@ -670,13 +676,12 @@ namespace WindowsFormsApp1
         public void RenderComponentsUI(string json, Control parent)
         {
             var result = JsonConvert.DeserializeObject<Root>(GrpcResponseStore.LastResponse.Result);
-            Console.WriteLine(result.Components);
             if (result == null || result.Components == null) return;
-            if (parent.InvokeRequired)
-            {
-                parent.Invoke(new Action<string, Control>(RenderComponentsUI), json, parent);
-                return;
-            }
+            //if (parent.InvokeRequired)
+            //{
+            //    parent.Invoke(new Action<string, Control>(RenderComponentsUI), json, parent);
+            //    return;
+            //}
 
             if (componentResultInspectionRadioButton.Checked)
             {
@@ -685,7 +690,6 @@ namespace WindowsFormsApp1
             }
             else
             {
-                Console.WriteLine(result);
                 BuildUiFirstTime(result, flowLayoutPanel1);
                 UpdateUiInspectionResult(result, flowLayoutPanel1);
             }
@@ -695,9 +699,11 @@ namespace WindowsFormsApp1
         {
             if (data == null || data.Components == null) return;
             parent.SuspendLayout();
+            Console.WriteLine("update ui");
 
             foreach (var kv in data.Components)
             {
+                Console.WriteLine(kv.Key);
                 string key = kv.Key;
 
                 var imgBox = parent.Controls.Find("imgBox_" + key, true).FirstOrDefault() as PictureBox;
@@ -705,59 +711,60 @@ namespace WindowsFormsApp1
                 var parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
                 var innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
 
-                //if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
+                if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
 
-                //var item = kv.Value.FirstOrDefault();
-                //if (item == null) continue;
+                var item = kv.Value.FirstOrDefault();
+                if (item == null) continue;
 
-                ////var fileImage = _fileUtils.GetLatestImage();
-                //if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
+                var fileImage = _fileUtils.GetLatestImage();
+                Console.WriteLine(fileImage);
+                if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
 
-                //Bitmap srcBmp;
-                //using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
-                //    srcBmp = new Bitmap(ms);
+                Bitmap srcBmp;
+                using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                    srcBmp = new Bitmap(ms);
 
-                //Bitmap boxed = null;
-                //var all = new List<int>();
-                //foreach (var v in kv.Value)
-                //{
-                //    if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
-                //}
+                Bitmap boxed = null;
+                var all = new List<int>();
+                foreach (var v in kv.Value)
+                {
+                    if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
+                }
 
-                //if (all.Count > 0)
-                //{
-                //    try { boxed = _imageUtil.DrawBoundingBoxMultiple(srcBmp, all); }
-                //    catch (Exception ex) { Console.WriteLine("[DrawBoxes] " + ex.Message); }
-                //}
+                if (all.Count > 0)
+                {
+                    try { boxed = _imageUtil.DrawBoundingBoxMultiple(srcBmp, all); }
+                    catch (Exception ex) { Console.WriteLine("[DrawBoxes] " + ex.Message); }
+                }
 
-                //imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
-                //imgBox.Margin = new Padding(0);
-                //imgBox.Image = boxed;
-                //innerTable.RowCount = 1;
+                imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                imgBox.Margin = new Padding(0);
+                imgBox.Image = boxed;
+                innerTable.RowCount = 1;
 
-                //srcBmp.Dispose();
+                srcBmp.Dispose();
 
-                //resultLbl.Text = item.Label ? "NG" : "Good";
-                //parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
+                resultLbl.Text = item.Label ? "NG" : "Good";
+                parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
 
-                //var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
-                //if (dummy != null && dummy.Visible) dummy.Visible = false;
+                var dummy = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Text == "Result Inspection");
+                if (dummy != null && dummy.Visible) dummy.Visible = false;
 
-                //var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
-                //if (string.IsNullOrEmpty(item.Value))
-                //{
-                //    if (valLbl != null) valLbl.Visible = false;
-                //}
-                //else
-                //{
-                //    if (valLbl == null)
-                //    {
-                //        valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
-                //        innerTable.Controls.Add(valLbl);
-                //    }
-                //    valLbl.Text = "Value: " + item.Value;
-                //    valLbl.Visible = true;
-                //}
+                var valLbl = innerTable.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "valLbl_" + key);
+                if (string.IsNullOrEmpty(item.Value))
+                {
+                    if (valLbl != null) valLbl.Visible = false;
+                }
+                else
+                {
+                    if (valLbl == null)
+                    {
+                        valLbl = new Label { Name = "valLbl_" + key, ForeColor = Color.White, AutoSize = true };
+                        innerTable.Controls.Add(valLbl);
+                    }
+                    valLbl.Text = "Value: " + item.Value;
+                    valLbl.Visible = true;
+                }
             }
 
             var final = parent.Controls.Find("finalLabel", true).FirstOrDefault() as Label;
@@ -788,21 +795,21 @@ namespace WindowsFormsApp1
                     var item = kv.Value.FirstOrDefault();
                     if (item == null) { index++; continue; }
 
-                    //var fileImage = _fileUtils.GetLatestImage();
-                    //if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) { index++; continue; }
+                    var fileImage = _fileUtils.GetLatestImage();
+                    if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) { index++; continue; }
 
-                    //Bitmap srcBmp;
-                    //using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
-                    //    srcBmp = new Bitmap(ms);
+                    Bitmap srcBmp;
+                    using (var ms = new MemoryStream(File.ReadAllBytes(fileImage)))
+                        srcBmp = new Bitmap(ms);
 
-                    //Bitmap boxed = _imageUtil.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
+                    Bitmap boxed = _imageUtil.CropAndDrawBoundingBoxes(srcBmp, value.Boxes);
 
-                    //imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
-                    //imgBox.Margin = new Padding(0);
-                    //imgBox.Image = boxed;
-                    //innerTable.RowCount = 1;
+                    imgBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                    imgBox.Margin = new Padding(0);
+                    imgBox.Image = boxed;
+                    innerTable.RowCount = 1;
 
-                    //srcBmp.Dispose();
+                    srcBmp.Dispose();
 
                     resultLbl.Text = item.Label ? "NG" : "Good";
                     parrot.BackColor = (!item.Label) ? Color.FromArgb(4, 194, 55) : Color.FromArgb(192, 0, 0);
@@ -949,13 +956,13 @@ namespace WindowsFormsApp1
 
         private void BuildUiFirstTime(Root data, FlowLayoutPanel parent)
         {
-
+            Console.WriteLine("build ui firsttime");
             parent.Controls.Clear();
 
             foreach (var kv in data.Components)
             {
                 string key = kv.Key;
-
+                Console.WriteLine(key);
                 var panel = new Panel
                 {
                     Name = "panel_" + key,
@@ -1030,15 +1037,15 @@ namespace WindowsFormsApp1
                 parrot.Controls.Add(resultTable);
 
                 var resultLabel = new Label
-                {
-                    Name = "resultLbl_" + key,
-                    Text = "Result Inspection",
-                    Dock = DockStyle.Fill,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                    TextAlign = ContentAlignment.MiddleCenter
-                };
-                resultTable.Controls.Add(resultLabel);
+                    {
+                        Name = "resultLbl_" + key,
+                        Text = "Result Inspection",
+                        Dock = DockStyle.Fill,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                        TextAlign = ContentAlignment.MiddleCenter
+                    };
+                    resultTable.Controls.Add(resultLabel);
 
                 parent.Controls.Add(panel);
             }

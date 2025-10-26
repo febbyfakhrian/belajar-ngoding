@@ -9,8 +9,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WindowsFormsApp1.Models;
-using WindowsFormsApp1.Services;
+using WindowsFormsApp1.Core.Entities.Models;
+using WindowsFormsApp1.Infrastructure.Services;
+using WindowsFormsApp1.Infrastructure.Services.Services;
 
 namespace WindowsFormsApp1
 {
