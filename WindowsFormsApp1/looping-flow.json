@@ -1,92 +1,69 @@
 {
-    "name": "LoopingInspectionFlow",
-    "nodes": [
-        {
-            "id": "start",
-            "type": "action",
-            "parameters": { "actionKey": "Plc.LampOn" }
-        },
-        {
-            "id": "camera-started",
-            "type": "trigger",
-            "parameters": { "triggerName": "CAMERA_STARTED" }
-        },
-        {
-            "id": "camera-prepare",
-            "type": "action",
-            "parameters": { "actionKey": "Camera.Prepare" }
-        },
-        {
-            "id": "lamp-on",
-            "type": "action",
-            "parameters": { "actionKey": "Plc.SubscribeRead" }
-        },
-        {
-            "id": "loop-start",
-            "type": "loop-start",
-            "parameters": { 
-                "maxIterations": 2
-            }
-        },
-        {
-            "id": "wait-trigger",
-            "type": "trigger",
-            "parameters": { "triggerName": "PLC_READ_RECEIVED" }
-        },
-        {
-            "id": "capture-frame",
-            "type": "action",
-            "parameters": { "actionKey": "Camera.CaptureFrame" }
-        },
-        {
-            "id": "process-image",
-            "type": "action",
-            "parameters": { "actionKey": "Grpc.ProcessImage" }
-        },
-        {
-            "id": "loop-end",
-            "type": "loop-end",
-            "parameters": { 
-                "loopRef": "loop-start"
-            }
-        }
-    ],
-    "connections": [
-        {
-            "from": "start",
-            "to": "camera-started"
-        },
-        {
-            "from": "camera-started",
-            "to": "camera-prepare"
-        },
-        {
-            "from": "camera-prepare",
-            "to": "lamp-on"
-        },
-        {
-            "from": "lamp-on",
-            "to": "loop-start"
-        },
-        {
-            "from": "loop-start",
-            "to": "wait-trigger"
-        },
-        {
-            "from": "wait-trigger",
-            "to": "capture-frame"
-        },
-        {
-            "from": "capture-frame",
-            "to": "process-image"
-        },
-        {
-            "from": "process-image",
-            "to": "loop-end"
-        },
-        {
-            "from": "loop-end",
-            "to": "wait-trigger"
-        }
-    ]
+  "nodes": [
+    {
+      "id": "start",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.LampOn" }
+    },
+    {
+      "id": "cam-ready",
+      "type": "trigger",
+      "parameters": { "triggerName": "CAMERA_STARTED" }
+    },
+    {
+      "id": "cam-prep",
+      "type": "action",
+      "parameters": { "actionKey": "Camera.Prepare" }
+    },
+    {
+      "id": "lamp-on",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.SubscribeRead" }
+    },
+    {
+      "id": "wait-plc",
+      "type": "trigger",
+      "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+    },
+    {
+      "id": "capture",
+      "type": "action",
+      "parameters": { "actionKey": "Camera.CaptureFrame" }
+    },
+    {
+      "id": "process",
+      "type": "action",
+      "parameters": { "actionKey": "Grpc.ProcessImage" }
+    }
+  ],
+  "connections": [
+    {
+      "from": "start",
+      "to": "cam-ready"
+    },
+    {
+      "from": "cam-ready",
+      "to": "cam-prep"
+    },
+    {
+      "from": "cam-prep",
+      "to": "lamp-on"
+    },
+    {
+      "from": "lamp-on",
+      "to": "wait-plc"
+    },
+    {
+      "from": "wait-plc",
+      "to": "capture"
+    },
+    {
+      "from": "capture",
+      "to": "process"
+    },
+    {
+      "from": "process",
+      "to": "wait-plc"
+    }
+  ]
 }

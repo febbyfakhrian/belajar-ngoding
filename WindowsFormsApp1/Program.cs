@@ -47,7 +47,7 @@ namespace AutoInspectionPlatform
 
                 // 2. Jalankan DAG (fire-and-forget) → 1 baris
                 Console.WriteLine("Running DAG in background...");
-                _ = provider.RunDagInBackground("looping-flow.json",
+                _ = provider.RunDagInBackground("inspectionflow.json",
                                                 maxDegree: 4,
                                                 CancellationToken.None);
 

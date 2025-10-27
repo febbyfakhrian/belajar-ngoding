@@ -145,16 +145,13 @@ namespace WindowsFormsApp1.Core.Domain.Actions
 
         public void Subscribe()
         {
-            if (_plc == null) return;
-            if (_attachedHandler != null) return; // sudah subscribe
+            if (_plc == null || _attachedHandler != null) return;
 
-            // 1. buat delegate dulu
-            _attachedHandler = async (lineRaw) =>
-            {
-                await HandleLineAsync(lineRaw);
-            };
+            // 1.  ASK the PLC to start sending READ lines
+            _plc.SendCommandAsync(_readBytes);   // <-- missing line
 
-            // 2. baru pasang ke event
+            // 2.  now listen for the answers
+            _attachedHandler = async lineRaw => await HandleLineAsync(lineRaw);
             _plc.LineReceived += _attachedHandler;
         }
 
@@ -167,28 +164,31 @@ namespace WindowsFormsApp1.Core.Domain.Actions
             _attachedHandler = null;
         }
 
-        private async Task HandleLineAsync(string lineRaw)
+        private Task HandleLineAsync(string lineRaw)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(lineRaw)) return;
-
+                Debug.WriteLine($"lineRaw {lineRaw}");
                 string cmd = Encoding.ASCII.GetString(_readBytes).TrimEnd('\r', '\n');
                 lineRaw = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n");
                 string lineClean = lineRaw.TrimEnd('\r', '\n');
-                Debug.WriteLine(lineRaw);
 
+                Debug.WriteLine($"lineClean {lineClean}");
+                Debug.WriteLine($"cmd {cmd}");
+                _ctx.Trigger = "PLC_READ_RECEIVED";
                 if (cmd.ToUpper().Equals(lineClean.ToUpper(), StringComparison.Ordinal))
                 {
                     Debug.WriteLine("read signal");
                     _ctx.Trigger = "PLC_READ_RECEIVED";
-                    // keep the original behavior: immediately run Inspect flow
                 }
             }
             catch
             {
+                Debug.WriteLine("sdfsdf");
                 // swallow – avoid breaking the subscription loop on sporadic parse errors
             }
+
+            return Task.CompletedTask;
         }
     }
 }

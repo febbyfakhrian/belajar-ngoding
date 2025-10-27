@@ -1,73 +1,70 @@
 {
-    "name": "InspectionFlow",
-    "nodes": [
-        {
-            "id": "start",
-            "type": "action",
-            "parameters": { "actionKey": "Plc.LampOn" }
-        },
-        {
-            "id": "prepare-cam",
-            "type": "action",
-            "parameters": { "actionKey": "Camera.Prepare" }
-        },
-        {
-            "id": "capture",
-            "type": "action",
-            "parameters": { "actionKey": "Camera.CaptureFrame" }
-        },
-        {
-            "id": "inspect",
-            "type": "action",
-            "parameters": { "actionKey": "Ai.Inspect" }
-        },
-        {
-            "id": "check",
-            "type": "condition",
-            "parameters": {
-                "conditions": {
-                    "Dimension": "Ai.Result.Dimension",
-                    "Surface": "Ai.Result.Surface"
-                }
-            }
-        },
-        {
-            "id": "pass",
-            "type": "action",
-            "parameters": { "actionKey": "Plc.SendPass" }
-        },
-        {
-            "id": "fail",
-            "type": "action",
-            "parameters": { "actionKey": "Plc.SendFail" }
-        }
-    ],
-    "connections": [
-        {
-            "from": "start",
-            "to": "prepare-cam"
-        },
-        {
-            "from": "prepare-cam",
-            "to": "capture"
-        },
-        {
-            "from": "capture",
-            "to": "inspect"
-        },
-        {
-            "from": "inspect",
-            "to": "check"
-        },
-        {
-            "from": "check",
-            "to": "pass",
-            "when": "Dimension == true && Surface == true"
-        },
-        {
-            "from": "check",
-            "to": "fail",
-            "when": "Dimension == false || Surface == false"
-        }
-    ]
+  "name": "LoopingInspectionFlow",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.LampOn" }
+    },
+    {
+      "id": "camera-started",
+      "type": "trigger",
+      "parameters": { "triggerName": "CAMERA_STARTED" }
+    },
+    {
+      "id": "camera-prepare",
+      "type": "action",
+      "parameters": { "actionKey": "Camera.Prepare" }
+    },
+    {
+      "id": "lamp-on",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.SubscribeRead" }
+    },
+    {
+      "id": "wait-trigger",
+      "type": "trigger",
+      "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+    },
+    {
+      "id": "capture-frame",
+      "type": "action",
+      "parameters": { "actionKey": "Camera.CaptureFrame" }
+    },
+    {
+      "id": "process-image",
+      "type": "action",
+      "parameters": { "actionKey": "Grpc.ProcessImage" }
+    }
+  ],
+  "connections": [
+    {
+      "from": "start",
+      "to": "camera-started"
+    },
+    {
+      "from": "camera-started",
+      "to": "camera-prepare"
+    },
+    {
+      "from": "camera-prepare",
+      "to": "lamp-on"
+    },
+    {
+      "from": "lamp-on",
+      "to": "wait-trigger"
+    },
+    {
+      "from": "wait-trigger",
+      "to": "capture-frame"
+    },
+    {
+      "from": "capture-frame",
+      "to": "process-image"
+    },
+    {
+      "from": "process-image",
+      "to": "process-image"
+    }
+  ]
 }
