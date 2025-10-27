@@ -12,6 +12,7 @@ using WindowsFormsApp1.Infrastructure.Di;
 using WindowsFormsApp1.Infrastructure.Hardware.PLC;
 using WindowsFormsApp1.Core.Interfaces;
 using WindowsFormsApp1.Infrastructure.Services.Services;
+using WindowsFormsApp1.Core.Domain.Flow.Dag; // Add this using statement
 
 namespace AutoInspectionPlatform
 {
@@ -34,25 +35,20 @@ namespace AutoInspectionPlatform
                 Console.WriteLine("Configuring PLC services...");
                 ConfigurePlcServices(services);        // PLC
 
-                Console.WriteLine("Building service provider...");
                 var provider = services.BuildServiceProvider();
 
-                Console.WriteLine("Configuring PLC after build...");
                 // Configure PLC after service provider is built
                 ConfigurePlcAfterBuild(provider);
 
-                Console.WriteLine("Getting gRPC service...");
                 var grpc = provider.GetRequiredService<IGrpcService>();
                 if (!grpc.StartAsync().Result) Console.WriteLine("gRPC not ready");
 
                 // 2. Jalankan DAG (fire-and-forget) → 1 baris
-                Console.WriteLine("Running DAG in background...");
                 _ = provider.RunDagInBackground("inspectionflow.json",
-                                                maxDegree: 4,
-                                                CancellationToken.None);
+                                      maxDegree: 4,
+                                      CancellationToken.None);
 
                 // 3. Start UI
-                Console.WriteLine("Starting application...");
                 Application.Run(new MainDashboard(provider));
             }
             catch (Exception ex)
@@ -62,6 +58,30 @@ namespace AutoInspectionPlatform
                 Console.WriteLine($"Exception message: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 throw;
+            }
+        }
+
+        static void TestDagLoading()
+        {
+            try
+            {
+                Console.WriteLine("Testing DAG JSON loading...");
+                var dag = DagFlowLoader.LoadJson("inspectionflow.json");
+                Console.WriteLine($"Successfully loaded DAG: {dag.Name}");
+                Console.WriteLine($"Nodes count: {dag.Nodes.Count}");
+                Console.WriteLine($"Connections count: {dag.Connections.Count}");
+                
+                foreach (var connection in dag.Connections)
+                {
+                    Console.WriteLine($"  {connection.From} -> {connection.To}");
+                }
+                
+                Console.WriteLine("DAG loading test completed successfully!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DAG loading test: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }
 

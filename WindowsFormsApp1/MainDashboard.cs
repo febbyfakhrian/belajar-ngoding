@@ -22,6 +22,7 @@ using WindowsFormsApp1.Core.Domain.Flow.Engine;
 using WindowsFormsApp1.Core.Entities.Models;
 using static WindowsFormsApp1.Core.Common.Helpers.VideoGrabber;
 using WindowsFormsApp1.Core.Domain.Flow.Dag;
+using WindowsFormsApp1.Presentation.Flow;
 
 namespace WindowsFormsApp1
 {
@@ -1171,5 +1172,12 @@ namespace WindowsFormsApp1
         // Events required by original code
         public event Action<byte[]> FrameEncoded;
         public event Action<string> Error;
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            var dialog = new DiagramConfigurationForm();
+
+            dialog.Show();
+        }
     }
 }

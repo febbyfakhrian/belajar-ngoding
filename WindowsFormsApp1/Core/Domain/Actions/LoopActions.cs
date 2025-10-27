@@ -17,7 +17,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
             // This action exists for compatibility with action-based loop definitions
             LogInfo("Loop start action executed");
             return Task.CompletedTask;
-        }
+    }
     }
     
     // Loop end action that manages loop completion and continuation
@@ -30,6 +30,32 @@ namespace WindowsFormsApp1.Core.Domain.Actions
             // Loop completion is now handled by the DAG executor
             // This action exists for compatibility with action-based loop definitions
             LogInfo("Loop end action executed");
+            return Task.CompletedTask;
+        }
+    }
+    
+    // Loop finalization action that cleans up loop state
+    public sealed class FinalizeLoopAction : BaseAction
+    {
+        public override string Key => "Finalize.Loop";
+        
+        public override Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
+        {
+            // Clean up any loop-specific state
+            LogInfo("Finalizing loop execution");
+            
+            // Remove loop-specific variables from context
+            var keysToRemove = new[] { "loopActive", "loopId", "loopCompleted" };
+            foreach (var key in keysToRemove)
+            {
+                if (ctx.Vars.ContainsKey(key))
+                {
+                    ctx.Vars.Remove(key);
+                    LogInfo($"Removed loop variable: {key}");
+                }
+            }
+            
+            LogInfo("Loop finalization completed");
             return Task.CompletedTask;
         }
     }

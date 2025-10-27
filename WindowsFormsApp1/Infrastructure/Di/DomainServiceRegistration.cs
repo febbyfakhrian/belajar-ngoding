@@ -30,6 +30,7 @@ namespace WindowsFormsApp1.Infrastructure.Di
             // Loop control actions
             services.AddTransient<IFlowAction, LoopStartAction>();
             services.AddTransient<IFlowAction, LoopEndAction>();
+            services.AddTransient<IFlowAction, FinalizeLoopAction>(); // Add the missing Finalize.Loop action
             services.AddTransient<IFlowAction, LoopControllerAction>();
             services.AddTransient<IFlowAction, LoopResetAction>();
         }

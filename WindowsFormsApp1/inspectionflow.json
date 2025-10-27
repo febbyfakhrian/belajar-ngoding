@@ -1,70 +1,145 @@
 {
-  "name": "LoopingInspectionFlow",
+  "name": "Loop Split Batches Flow",
+  "id": "c9f70a3a-5463-48db-889e-23be74c292ff",
   "nodes": [
     {
-      "id": "start",
+      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c2",
+      "name": "start",
       "type": "action",
       "parameters": { "actionKey": "Plc.LampOn" }
     },
     {
-      "id": "camera-started",
+      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c3",
+      "name": "camera-started",
       "type": "trigger",
       "parameters": { "triggerName": "CAMERA_STARTED" }
     },
     {
-      "id": "camera-prepare",
+      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c4",
+      "name": "camera-prepare",
       "type": "action",
       "parameters": { "actionKey": "Camera.Prepare" }
     },
     {
-      "id": "lamp-on",
+      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c5",
+      "name": "lamp-on",
       "type": "action",
       "parameters": { "actionKey": "Plc.SubscribeRead" }
     },
     {
-      "id": "wait-trigger",
-      "type": "trigger",
-      "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c1",
+      "name": "Loop Start",
+      "type": "split-batches",
+      "parameters": { "batchSize": 4 }
     },
     {
-      "id": "capture-frame",
+      "id": "c129b6f2-76a4-48c9-871e-0b19f510bdb0",
+      "name": "Capture Frame",
       "type": "action",
       "parameters": { "actionKey": "Camera.CaptureFrame" }
     },
     {
-      "id": "process-image",
+      "id": "1e839c36-7588-495c-bb21-20a318b0ad4c",
+      "name": "Process Image",
       "type": "action",
       "parameters": { "actionKey": "Grpc.ProcessImage" }
+    },
+    {
+      "id": "5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b",
+      "name": "Loop End",
+      "type": "action",
+      "parameters": { "actionKey": "Finalize.Loop" }
     }
   ],
-  "connections": [
-    {
-      "from": "start",
-      "to": "camera-started"
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "camera-started",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "camera-started",
-      "to": "camera-prepare"
+    "camera-started": {
+      "main": [
+        [
+          {
+            "node": "camera-prepare",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "camera-prepare",
-      "to": "lamp-on"
+    "camera-prepare": {
+      "main": [
+        [
+          {
+            "node": "lamp-on",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "lamp-on",
-      "to": "wait-trigger"
+    "lamp-on": {
+      "main": [
+        [
+          {
+            "node": "Loop Start",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "wait-trigger",
-      "to": "capture-frame"
+    "Loop Start": {
+      "main": [
+        [
+          {
+            "node": "Capture Frame",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "done": [
+        [
+          {
+            "node": "Loop End",
+            "key": "done",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "capture-frame",
-      "to": "process-image"
+    "Capture Frame": {
+      "main": [
+        [
+          {
+            "node": "Process Image",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    {
-      "from": "process-image",
-      "to": "process-image"
+    "Process Image": {
+      "main": [
+        [
+          {
+            "node": "Loop Start",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop End": {
+      "main": []
     }
-  ]
+  }
 }

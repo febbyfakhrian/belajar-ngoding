@@ -147,8 +147,15 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             if (_plc == null || _attachedHandler != null) return;
 
+            // Check if PLC connection is open before sending command
+            if (!_plc.IsOpen)
+            {
+                Debug.WriteLine("PLC port is not open. Cannot subscribe to read events.");
+                return;
+            }
+
             // 1.  ASK the PLC to start sending READ lines
-            _plc.SendCommandAsync(_readBytes);   // <-- missing line
+            _plc.SendCommandAsync(_readBytes);
 
             // 2.  now listen for the answers
             _attachedHandler = async lineRaw => await HandleLineAsync(lineRaw);
