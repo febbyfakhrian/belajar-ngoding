@@ -383,11 +383,13 @@
     <Compile Include="Infrastructure\Hardware\Grpc\GrpcServiceFactory.cs" />
     <Compile Include="Infrastructure\Hardware\PLC\PlcOperation.cs" />
     <Compile Include="Infrastructure\Hardware\PLC\PlcServiceFactory.cs" />
+    <Compile Include="Infrastructure\Services\CycleTimer.cs" />
+    <Compile Include="Infrastructure\Services\GrpcService.cs" />
     <Compile Include="Infrastructure\Services\HealthCheckService.cs" />
-    <Compile Include="Infrastructure\Services\Services\GrpcService.cs" />
-    <Compile Include="Infrastructure\Services\Services\ImageDbOperation.cs" />
-    <Compile Include="Infrastructure\Services\Services\InspectionLogger.cs" />
-    <Compile Include="Infrastructure\Services\Services\SettingsOperation.cs" />
+    <Compile Include="Infrastructure\Services\ImageDbOperation.cs" />
+    <Compile Include="Infrastructure\Services\InspectionLogger.cs" />
+    <Compile Include="Infrastructure\Services\RunDagExtensions.cs" />
+    <Compile Include="Infrastructure\Services\SettingsOperation.cs" />
     <Compile Include="MVCamera.cs" />
     <Compile Include="PLCCommand.cs" />
     <Compile Include="Presentation\Forms\BaseForm.cs">
@@ -469,11 +471,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultDTO.cs" />
     <Compile Include="Core\Common\Helpers\VideoGrabber.cs" />
-    <Compile Include="Infrastructure\Services\Services\CameraService.cs" />
-    <Compile Include="Infrastructure\Services\Services\CycleTimer.cs" />
     <Compile Include="Infrastructure\Hardware\Grpc\GrpcService.cs" />
-    <Compile Include="Infrastructure\Services\Services\PlcOperation.cs" />
-    <Compile Include="Infrastructure\Services\Services\RunDagExtensions.cs" />
     <Compile Include="Infrastructure\Data\SettingsOperation.cs" />
     <EmbeddedResource Include="DialogDebugMenuGrpc.resx">
       <DependentUpon>DialogDebugMenuGrpc.cs</DependentUpon>

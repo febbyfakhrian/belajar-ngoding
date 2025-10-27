@@ -1,24 +1,18 @@
 using Api;
-using AutoInspectionPlatform;
 using Microsoft.Extensions.DependencyInjection;
 using MvCamCtrl.NET;
 using Newtonsoft.Json;
-using OpenCvSharp;
-using OpenCvSharp.Extensions;
-using PLCCommunication;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using WindowsFormsApp1.Infrastructure.Hardware.Camera;
 using Label = System.Windows.Forms.Label;
@@ -27,7 +21,7 @@ using WindowsFormsApp1.Core.Common.Helpers;
 using WindowsFormsApp1.Core.Domain.Flow.Engine;
 using WindowsFormsApp1.Core.Entities.Models;
 using static WindowsFormsApp1.Core.Common.Helpers.VideoGrabber;
-using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
+using WindowsFormsApp1.Core.Domain.Flow.Dag;
 
 namespace WindowsFormsApp1
 {
@@ -67,6 +61,11 @@ namespace WindowsFormsApp1
         private CameraManager _cam;
         private const int RECONNECT_INTERVAL_MS = 3000;
         private FileUtils _fileUtils;
+
+        private DagExecutor _executor;
+        private CancellationTokenSource _flowCts = new CancellationTokenSource();
+        // Add field to track DAG execution task
+        private Task _dagExecutionTask;
 
         public MainDashboard(IServiceProvider provider)
         {
@@ -453,16 +452,65 @@ namespace WindowsFormsApp1
             if (handler != null) handler(msg);
         }
 
+        // Event to signal when DAG execution is ready to receive triggers
+        private TaskCompletionSource<bool> _dagReadyTcs = new TaskCompletionSource<bool>();
+        
+        // Add method to restart DAG execution
+        private async Task RestartDagExecutionAsync()
+        {
+            try
+            {
+                // Cancel any existing flow execution
+                _flowCts?.Cancel();
+                
+                // Create new cancellation token source
+                _flowCts = new CancellationTokenSource();
+                
+                // Reset the TaskCompletionSource for this execution
+                var newTcs = new TaskCompletionSource<bool>();
+                var oldTcs = Interlocked.Exchange(ref _dagReadyTcs, newTcs);
+                oldTcs?.TrySetCanceled(); // Cancel any pending waits
+                
+                // Load DAG definition
+                var dag = DagFlowLoader.LoadJson("inspectionflow.json");
+                var registry = _provider.GetRequiredService<IActionRegistry>();
+                
+                // Create new executor
+                _executor = new DagExecutor(registry, _ctx);
+                
+                // Start DAG execution in background
+                _dagExecutionTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _executor.RunAsync(dag, _flowCts.Token, 4);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected when cancellation is requested
+                        _dagReadyTcs.TrySetCanceled();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in DAG execution: {ex.Message}");
+                        _dagReadyTcs.TrySetException(ex);
+                    }
+                });
+                
+                // Give the DAG execution a moment to start
+                await Task.Delay(50);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error restarting DAG execution: {ex.Message}");
+                throw;
+            }
+        }
+
         // ------------- Buttons / Menu -------------
 
         private async void openCamera_Click(object sender, EventArgs e)
         {
-            //if (isDebug.Checked)
-            //{
-            //    StartDebugPreviewLoop();
-            //    return;
-            //}
-
             if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
                 ShowErrorMsg("No device, please select", 0);
@@ -473,12 +521,10 @@ namespace WindowsFormsApp1
                 _deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
                 typeof(MyCamera.MV_CC_DEVICE_INFO));
 
-            _cam.Open(device);
-
+            // Buka baru (handle fresh)
             if (!_cam.Open(device))
             {
                 ShowErrorMsg("Failed to open device", 0);
-
                 return;
             }
         }
@@ -496,7 +542,6 @@ namespace WindowsFormsApp1
 
             tableLayoutPanel9.RowCount = 1;
             pictureBox5.Dock = DockStyle.Fill;
-            pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox5.Margin = new Padding(0);
             pictureBox5.Padding = new Padding(0);
             labelCameraInspection.Visible = false;
@@ -507,7 +552,6 @@ namespace WindowsFormsApp1
                 //SubscribePlcSignal();
             }
 
-
             if (MyCamera.MV_OK != nRet)
             {
                 //pictureBox5.Visible = true;
@@ -516,14 +560,28 @@ namespace WindowsFormsApp1
                 ShowErrorMsg("Start Grabbing Fail!", nRet);
             }
 
+            // Restart DAG execution when starting camera
+            await RestartDagExecutionAsync();
+
+            // Small delay to ensure DAG execution has started and is waiting for trigger
+            await Task.Delay(100);
+
             _ctx.Trigger = "CAMERA_STARTED";
+            pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
         {
-            _grabbing = false;
-            _cam.Stop();
+            _grabbing = false;          // flag UI
+            _cam.Close();               // <-- TUTUP TOTAL
+
+            // Cancel DAG execution
+            _flowCts?.Cancel();
+
+            tableLayoutPanel9.RowCount = 2;
+            labelCameraInspection.Visible = true;
         }
+
 
         private void cameraToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -677,11 +735,6 @@ namespace WindowsFormsApp1
         {
             var result = JsonConvert.DeserializeObject<Root>(GrpcResponseStore.LastResponse.Result);
             if (result == null || result.Components == null) return;
-            //if (parent.InvokeRequired)
-            //{
-            //    parent.Invoke(new Action<string, Control>(RenderComponentsUI), json, parent);
-            //    return;
-            //}
 
             if (componentResultInspectionRadioButton.Checked)
             {

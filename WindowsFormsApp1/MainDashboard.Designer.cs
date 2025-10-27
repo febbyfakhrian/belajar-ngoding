@@ -252,6 +252,7 @@
             this.parrotWidgetPanel5.Controls.Add(this.tableLayoutPanel30);
             this.parrotWidgetPanel5.ControlsAsWidgets = false;
             this.parrotWidgetPanel5.Dock = System.Windows.Forms.DockStyle.Top;
+            this.parrotWidgetPanel5.Enabled = false;
             this.parrotWidgetPanel5.Location = new System.Drawing.Point(0, 576);
             this.parrotWidgetPanel5.Name = "parrotWidgetPanel5";
             this.parrotWidgetPanel5.Size = new System.Drawing.Size(224, 46);
@@ -302,6 +303,7 @@
             this.parrotWidgetPanel4.Controls.Add(this.tableLayoutPanel20);
             this.parrotWidgetPanel4.ControlsAsWidgets = false;
             this.parrotWidgetPanel4.Dock = System.Windows.Forms.DockStyle.Top;
+            this.parrotWidgetPanel4.Enabled = false;
             this.parrotWidgetPanel4.Location = new System.Drawing.Point(0, 334);
             this.parrotWidgetPanel4.Name = "parrotWidgetPanel4";
             this.parrotWidgetPanel4.Size = new System.Drawing.Size(224, 242);
@@ -551,6 +553,7 @@
             this.parrotWidgetPanel3.Controls.Add(this.tableLayoutPanel15);
             this.parrotWidgetPanel3.ControlsAsWidgets = false;
             this.parrotWidgetPanel3.Dock = System.Windows.Forms.DockStyle.Top;
+            this.parrotWidgetPanel3.Enabled = false;
             this.parrotWidgetPanel3.Location = new System.Drawing.Point(0, 288);
             this.parrotWidgetPanel3.Name = "parrotWidgetPanel3";
             this.parrotWidgetPanel3.Size = new System.Drawing.Size(224, 46);
@@ -666,6 +669,7 @@
             this.stopCamera.Cursor = System.Windows.Forms.Cursors.Hand;
             this.stopCamera.Dock = System.Windows.Forms.DockStyle.Fill;
             this.stopCamera.Image = ((System.Drawing.Image)(resources.GetObject("stopCamera.Image")));
+            this.stopCamera.InitialImage = ((System.Drawing.Image)(resources.GetObject("stopCamera.InitialImage")));
             this.stopCamera.Location = new System.Drawing.Point(5, 5);
             this.stopCamera.Name = "stopCamera";
             this.stopCamera.Size = new System.Drawing.Size(46, 39);
@@ -833,6 +837,7 @@
             this.panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(146)))), ((int)(((byte)(150)))), ((int)(((byte)(153)))));
             this.panel2.Controls.Add(this.pictureBox4);
             this.panel2.EdgeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(41)))), ((int)(((byte)(50)))));
+            this.panel2.Enabled = false;
             this.panel2.Location = new System.Drawing.Point(15, 9);
             this.panel2.Margin = new System.Windows.Forms.Padding(15, 0, 15, 0);
             this.panel2.Name = "panel2";
@@ -1014,7 +1019,7 @@
             this.cameraToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.cameraToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.cameraToolStripMenuItem.Name = "cameraToolStripMenuItem";
-            this.cameraToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.cameraToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.cameraToolStripMenuItem.Text = "Camera";
             this.cameraToolStripMenuItem.Click += new System.EventHandler(this.cameraToolStripMenuItem_Click);
             // 
@@ -1023,7 +1028,7 @@
             this.mESToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.mESToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.mESToolStripMenuItem.Name = "mESToolStripMenuItem";
-            this.mESToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.mESToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.mESToolStripMenuItem.Text = "MES";
             this.mESToolStripMenuItem.Click += new System.EventHandler(this.mESToolStripMenuItem_Click);
             // 
@@ -1032,7 +1037,7 @@
             this.pathLogToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.pathLogToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.pathLogToolStripMenuItem.Name = "pathLogToolStripMenuItem";
-            this.pathLogToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.pathLogToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.pathLogToolStripMenuItem.Text = "Path Log";
             this.pathLogToolStripMenuItem.Click += new System.EventHandler(this.pathLogToolStripMenuItem_Click);
             // 
@@ -1041,7 +1046,7 @@
             this.databaseToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.databaseToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.databaseToolStripMenuItem.Name = "databaseToolStripMenuItem";
-            this.databaseToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.databaseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.databaseToolStripMenuItem.Text = "Database";
             this.databaseToolStripMenuItem.Click += new System.EventHandler(this.databaseToolStripMenuItem_Click);
             // 
@@ -1050,7 +1055,7 @@
             this.pLCToolStripMenuItem1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.pLCToolStripMenuItem1.ForeColor = System.Drawing.Color.White;
             this.pLCToolStripMenuItem1.Name = "pLCToolStripMenuItem1";
-            this.pLCToolStripMenuItem1.Size = new System.Drawing.Size(122, 22);
+            this.pLCToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.pLCToolStripMenuItem1.Text = "PLC";
             this.pLCToolStripMenuItem1.Click += new System.EventHandler(this.pLCToolStripMenuItem1_Click);
             // 
@@ -1253,7 +1258,7 @@
             this.tableLayoutPanel3.ColumnCount = 3;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.94737F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.05263F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 241F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 242F));
             this.tableLayoutPanel3.Controls.Add(this.pictureBox2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.pictureBox3, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.tableLayoutPanel5, 2, 0);
@@ -1297,12 +1302,12 @@
             this.tableLayoutPanel5.Controls.Add(this.label12, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.label13, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(-14, 4);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(-15, 4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 41.07143F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 58.92857F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(235, 56);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(236, 56);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
             // label12

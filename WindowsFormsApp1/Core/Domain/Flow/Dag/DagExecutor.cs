@@ -104,12 +104,6 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                 string childId = edge.To;
 
                                 _ready.Enqueue(childId);
-                                //if (done.ContainsKey(childId)) continue;
-
-                                //int newVal = _indeg.AddOrUpdate(childId, 0, (_, old) => old - 1);
-                                //Debug.WriteLine($"[DAG] Child {childId} in-degree → {newVal}");
-                                //if (newVal == 0)
-                                //    _ready.Enqueue(childId);
                             }
                         }
                     }

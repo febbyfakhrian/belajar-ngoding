@@ -168,23 +168,19 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
-                Debug.WriteLine($"lineRaw {lineRaw}");
-                string cmd = Encoding.ASCII.GetString(_readBytes).TrimEnd('\r', '\n');
-                lineRaw = lineRaw.Replace("\\r", "\r").Replace("\\n", "\n");
+                // Instead of comparing the command with response, check if the line contains
+                // the expected response pattern or is a valid PLC response
                 string lineClean = lineRaw.TrimEnd('\r', '\n');
-
-                Debug.WriteLine($"lineClean {lineClean}");
-                Debug.WriteLine($"cmd {cmd}");
-                _ctx.Trigger = "PLC_READ_RECEIVED";
-                if (cmd.ToUpper().Equals(lineClean.ToUpper(), StringComparison.Ordinal))
+                
+                // Check if this is a response to our READ command
+                // The PLC should respond with something like "%01$RC..." for read commands
+                if (lineClean.StartsWith("%01$RC") || lineClean.StartsWith("%01#RCSR"))
                 {
-                    Debug.WriteLine("read signal");
                     _ctx.Trigger = "PLC_READ_RECEIVED";
                 }
             }
             catch
             {
-                Debug.WriteLine("sdfsdf");
                 // swallow – avoid breaking the subscription loop on sporadic parse errors
             }
 

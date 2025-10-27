@@ -206,8 +206,8 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
             string buffered;
             lock (_rxBuffer) buffered = _rxBuffer.ToString();
 
-            // Cari line separator
-            int lineEnd = buffered.IndexOf('\n', _lineStart);
+            // Cari line separator - now looking for \r to match PLC commands
+            int lineEnd = buffered.IndexOf('\r', _lineStart);
             while (lineEnd >= 0)
             {
                 // Ekstrak line penuh
@@ -222,7 +222,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
                 }
 
                 // Cari line separator berikutnya
-                lineEnd = buffered.IndexOf('\n', _lineStart);
+                lineEnd = buffered.IndexOf('\r', _lineStart);
             }
 
             // Bersihkan buffer jika sudah terlalu panjang

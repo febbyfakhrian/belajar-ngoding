@@ -398,6 +398,37 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Camera
             }
         }
 
+
+        public void Close()
+        {
+            lock (_disposeLock)
+            {
+                if (_isClosing || _isClosed) return;
+
+                // 1. Hentikan loop grab
+                Stop();
+
+                // 2. Stop grabbing SDK
+                if (_deviceOpened)
+                    try { _cam.MV_CC_StopGrabbing_NET(); } catch { }
+
+                // 3. Tutup handle
+                if (_deviceOpened)
+                {
+                    try { _cam.MV_CC_CloseDevice_NET(); } catch { }
+                    try { _cam.MV_CC_DestroyDevice_NET(); } catch { }
+                    _deviceOpened = false;
+                }
+
+                // 4. Bersihkan buffer & event
+                if (_annotatedBuf != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_annotatedBuf);
+                    _annotatedBuf = IntPtr.Zero;
+                    _annotatedSize = 0;
+                }
+            }
+        }
         public Task CloseAsync()
         {
             Dispose();
