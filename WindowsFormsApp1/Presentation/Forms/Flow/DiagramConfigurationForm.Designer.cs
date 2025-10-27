@@ -37,7 +37,7 @@
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Name = "DiagramConfigurationForm";
             this.Text = "DiagramConfigurationForm";
-            this.Load += new System.EventHandler(this.DiagramConfigurationForm_Load);
+            this.Load += new System.EventHandler(this.OnLoad);
             this.ResumeLayout(false);
 
         }

@@ -1,5 +1,4 @@
 using System;
-using YamlDotNet.Serialization;
 using System.IO;
 using Newtonsoft;
 using System.Diagnostics;
@@ -11,15 +10,6 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
 {
     class DagFlowLoader
     {
-        public static DagDefinition Load(string path)
-        {
-            var yaml = File.ReadAllText(path);
-            var des = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties()
-                .Build();
-            return des.Deserialize<DagDefinition>(yaml);
-        }
-
         public static DagDefinition LoadJson(string fileName)
         {
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);

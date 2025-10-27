@@ -61,30 +61,6 @@ namespace AutoInspectionPlatform
             }
         }
 
-        static void TestDagLoading()
-        {
-            try
-            {
-                Console.WriteLine("Testing DAG JSON loading...");
-                var dag = DagFlowLoader.LoadJson("inspectionflow.json");
-                Console.WriteLine($"Successfully loaded DAG: {dag.Name}");
-                Console.WriteLine($"Nodes count: {dag.Nodes.Count}");
-                Console.WriteLine($"Connections count: {dag.Connections.Count}");
-                
-                foreach (var connection in dag.Connections)
-                {
-                    Console.WriteLine($"  {connection.From} -> {connection.To}");
-                }
-                
-                Console.WriteLine("DAG loading test completed successfully!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in DAG loading test: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            }
-        }
-
         static void ConfigurePlcServices(IServiceCollection s)
         {
             Console.WriteLine("Registering IPlcService...");
