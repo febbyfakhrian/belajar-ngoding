@@ -1200,5 +1200,12 @@ namespace WindowsFormsApp1
 
             dialog.Show();
         }
+
+        private void toolStripMenuItem2_Click(object sender, EventArgs e)
+        {
+            var form = new NodeEditorForm();
+
+            form.Show();
+        }
     }
 }

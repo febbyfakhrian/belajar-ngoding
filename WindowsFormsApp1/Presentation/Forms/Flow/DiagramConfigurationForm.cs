@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using GraphSharp.Controls;                // GraphLayout
-using QuickGraph;                         // BidirectionalGraph
+using GraphSharp.Controls;        // GraphLayout
+using QuickGraph;                 // BidirectionalGraph
 using Newtonsoft.Json;
 using System.Windows.Forms.Integration;
 
@@ -34,25 +34,24 @@ namespace WindowsFormsApp1.Presentation.Flow
             {
                 var json = File.ReadAllText(jsonPath);
                 var flow = JsonConvert.DeserializeObject<Flow>(json);
-                if (flow == null)
+                if (flow == null || flow.Nodes == null || flow.Connections == null)
                 {
-                    MessageBox.Show("Invalid JSON format");
+                    MessageBox.Show("Invalid JSON or empty graph.");
                     return;
                 }
 
-                // Validate flow structure
-                if (flow.Nodes == null || flow.Connections == null)
-                {
-                    MessageBox.Show("Invalid flow structure: nodes or connections are missing");
-                    return;
-                }
+                // 1.  buat graph, isi vertex & edge
+                var graph = BuildGraph(flow);
 
-                BuildGraph(flow);
-
-                _layout.LayoutAlgorithmType = "Sugiyama";          // Fruchterman-Reingold (DAG friendly)
+                // 2.  baru set algoritma
                 _layout.OverlapRemovalAlgorithmType = "FSA";
+                _layout.LayoutAlgorithmType = "FR";
                 _layout.HighlightAlgorithmType = "Simple";
 
+                // 3.  assign graph -> layout & overlap-removal dijalankan
+                _layout.Graph = graph;
+
+                // 4.  tampilkan
                 _host.Child = _layout;
                 Controls.Add(_host);
             }
@@ -62,73 +61,41 @@ namespace WindowsFormsApp1.Presentation.Flow
             }
         }
 
-        private void BuildGraph(Flow flow)
+        /* ---------- bangun graph, return instance YANG SUDAH TERISI ---------- */
+        private BidirectionalGraph<object, IEdge<object>> BuildGraph(Flow flow)
         {
             var graph = new BidirectionalGraph<object, IEdge<object>>();
+            var vMap = flow.Nodes.ToDictionary(n => n.Name,
+                                                n => new Vertex(n.Name, n.Type) as object);
 
-            /* ---------- 1.  create vertices ---------- */
-            // Check for null or empty nodes
-            if (flow.Nodes == null)
-            {
-                MessageBox.Show("Flow nodes are null");
-                return;
-            }
-            
-            var vMap = flow.Nodes.ToDictionary(
-                n => n.Name,
-                n => new Vertex(n.Name, n.Type) as object);
-
+            // vertex
             foreach (var v in vMap.Values) graph.AddVertex(v);
 
-            /* ---------- 2.  create edges ---------- */
-            // Check for null connections
-            if (flow.Connections == null)
-            {
-                MessageBox.Show("Flow connections are null");
-                _layout.Graph = graph;
-                return;
-            }
-            
+            // edge
             foreach (var kv in flow.Connections)
             {
-                AddEdge(graph, vMap, kv.Key, kv.Value.Main);
-                AddEdge(graph, vMap, kv.Key, kv.Value.Done);
+                AddEdges(graph, vMap, kv.Key, kv.Value.Main);
+                AddEdges(graph, vMap, kv.Key, kv.Value.Done);
             }
 
-            _layout.Graph = graph;
+            return graph;   // pastikan tidak ada return di atas baris ini
         }
 
-        private static void AddEdge(
-            BidirectionalGraph<object, IEdge<object>> g,   // ← bukan IBidirectionalGraph
-            Dictionary<string, object> vMap,
-            string from,
-            List<List<EdgeDef>> lists)
+        private static void AddEdges(BidirectionalGraph<object, IEdge<object>> g,
+                                   Dictionary<string, object> vMap,
+                                   string from,
+                                   List<List<EdgeDef>> lists)
         {
             if (lists == null) return;
-            
-            // Check if 'from' node exists in vMap
-            if (!vMap.ContainsKey(from))
-            {
-                // Log or handle missing 'from' node
-                return;
-            }
-            
+            if (!vMap.ContainsKey(from)) return;
+
             foreach (var grp in lists)
-                foreach (var eDef in grp)
-                {
-                    // Check if target node exists in vMap
-                    if (vMap.ContainsKey(eDef.Node))
-                    {
-                        g.AddEdge(new Edge<object>(vMap[from], vMap[eDef.Node]));
-                    }
-                    // Optionally log missing target nodes
-                }
+                foreach (var e in grp)
+                    if (vMap.ContainsKey(e.Node))
+                        g.AddEdge(new Edge<object>(vMap[from], vMap[e.Node]));
         }
 
-
-        /* --------------------------------------------------
-         *  JSON models (unchanged)
-         * -------------------------------------------------- */
+        /* ---------------- JSON model ---------------- */
         public class Flow
         {
             public string Name { get; set; }
@@ -157,20 +124,15 @@ namespace WindowsFormsApp1.Presentation.Flow
             public int Index { get; set; }
         }
 
-        /* --------------------------------------------------
-         *  Vertex wrapper so we can attach colour/shape
-         * -------------------------------------------------- */
         private sealed class Vertex
         {
             public string Name { get; }
             public string Type { get; }
-
             public Vertex(string name, string type)
             {
                 Name = name;
                 Type = type;
             }
-
             public override string ToString() => $"{Name}\n({Type})";
         }
     }

@@ -228,6 +228,9 @@
     <Reference Include="SQLitePCLRaw.provider.dynamic_cdecl, Version=2.1.10.2445, Culture=neutral, PublicKeyToken=b68184102cba0b3b, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLitePCLRaw.provider.dynamic_cdecl.2.1.10\lib\netstandard2.0\SQLitePCLRaw.provider.dynamic_cdecl.dll</HintPath>
     </Reference>
+    <Reference Include="ST.Library.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ST.Library.UI.2.0.0\lib\net35\ST.Library.UI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
@@ -422,6 +425,12 @@
     <Compile Include="Infrastructure\Services\InspectionLogger.cs" />
     <Compile Include="Infrastructure\Services\RunDagExtensions.cs" />
     <Compile Include="MVCamera.cs" />
+    <Compile Include="NodeEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NodeEditorForm.Designer.cs">
+      <DependentUpon>NodeEditorForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="PLCCommand.cs" />
     <Compile Include="Presentation\Forms\BaseForm.cs">
       <SubType>Form</SubType>
@@ -530,6 +539,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NodeEditorForm.resx">
+      <DependentUpon>NodeEditorForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\Flow\DiagramConfigurationForm.resx">
       <DependentUpon>DiagramConfigurationForm.cs</DependentUpon>
