@@ -37,14 +37,14 @@
             this.bigLabel1 = new ReaLTaiizor.Controls.BigLabel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.frameRateTextBox = new ReaLTaiizor.Controls.MetroTextBox();
             this.frameRateLabel = new ReaLTaiizor.Controls.MoonLabel();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.moonLabel1 = new ReaLTaiizor.Controls.MoonLabel();
-            this.exposureTimeLabel = new ReaLTaiizor.Controls.MoonLabel();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.exposureTimeTextBox = new ReaLTaiizor.Controls.MetroTextBox();
             this.gainTextBox = new ReaLTaiizor.Controls.MetroTextBox();
-            this.frameRateTextBox = new ReaLTaiizor.Controls.MetroTextBox();
+            this.moonLabel1 = new ReaLTaiizor.Controls.MoonLabel();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.exposureTimeLabel = new ReaLTaiizor.Controls.MoonLabel();
+            this.exposureTimeTextBox = new ReaLTaiizor.Controls.MetroTextBox();
             this.tableLayoutPanel4.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CloseButton)).BeginInit();
@@ -193,6 +193,36 @@
             this.tableLayoutPanel6.Size = new System.Drawing.Size(313, 39);
             this.tableLayoutPanel6.TabIndex = 10;
             // 
+            // frameRateTextBox
+            // 
+            this.frameRateTextBox.AutoCompleteCustomSource = null;
+            this.frameRateTextBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
+            this.frameRateTextBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
+            this.frameRateTextBox.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.frameRateTextBox.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
+            this.frameRateTextBox.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.frameRateTextBox.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
+            this.frameRateTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.frameRateTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.frameRateTextBox.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.frameRateTextBox.Image = null;
+            this.frameRateTextBox.IsDerivedStyle = true;
+            this.frameRateTextBox.Lines = null;
+            this.frameRateTextBox.Location = new System.Drawing.Point(159, 3);
+            this.frameRateTextBox.MaxLength = 32767;
+            this.frameRateTextBox.Multiline = false;
+            this.frameRateTextBox.Name = "frameRateTextBox";
+            this.frameRateTextBox.ReadOnly = false;
+            this.frameRateTextBox.Size = new System.Drawing.Size(151, 33);
+            this.frameRateTextBox.Style = ReaLTaiizor.Enum.Metro.Style.Light;
+            this.frameRateTextBox.StyleManager = null;
+            this.frameRateTextBox.TabIndex = 6;
+            this.frameRateTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.frameRateTextBox.ThemeAuthor = "Taiizor";
+            this.frameRateTextBox.ThemeName = "MetroLight";
+            this.frameRateTextBox.UseSystemPasswordChar = false;
+            this.frameRateTextBox.WatermarkText = "";
+            // 
             // frameRateLabel
             // 
             this.frameRateLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
@@ -219,75 +249,6 @@
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(313, 39);
             this.tableLayoutPanel5.TabIndex = 9;
-            // 
-            // moonLabel1
-            // 
-            this.moonLabel1.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.moonLabel1.AutoSize = true;
-            this.moonLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.moonLabel1.ForeColor = System.Drawing.Color.White;
-            this.moonLabel1.Location = new System.Drawing.Point(3, 13);
-            this.moonLabel1.Name = "moonLabel1";
-            this.moonLabel1.Size = new System.Drawing.Size(29, 13);
-            this.moonLabel1.TabIndex = 3;
-            this.moonLabel1.Text = "Gain";
-            // 
-            // exposureTimeLabel
-            // 
-            this.exposureTimeLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.exposureTimeLabel.AutoSize = true;
-            this.exposureTimeLabel.BackColor = System.Drawing.Color.Transparent;
-            this.exposureTimeLabel.ForeColor = System.Drawing.Color.White;
-            this.exposureTimeLabel.Location = new System.Drawing.Point(3, 13);
-            this.exposureTimeLabel.Name = "exposureTimeLabel";
-            this.exposureTimeLabel.Size = new System.Drawing.Size(77, 13);
-            this.exposureTimeLabel.TabIndex = 3;
-            this.exposureTimeLabel.Text = "Exposure Time";
-            // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 2;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Controls.Add(this.exposureTimeLabel, 0, 0);
-            this.tableLayoutPanel3.Controls.Add(this.exposureTimeTextBox, 1, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 57);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 1;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(313, 39);
-            this.tableLayoutPanel3.TabIndex = 7;
-            // 
-            // exposureTimeTextBox
-            // 
-            this.exposureTimeTextBox.AutoCompleteCustomSource = null;
-            this.exposureTimeTextBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
-            this.exposureTimeTextBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
-            this.exposureTimeTextBox.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.exposureTimeTextBox.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
-            this.exposureTimeTextBox.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.exposureTimeTextBox.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
-            this.exposureTimeTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.exposureTimeTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.exposureTimeTextBox.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
-            this.exposureTimeTextBox.Image = null;
-            this.exposureTimeTextBox.IsDerivedStyle = true;
-            this.exposureTimeTextBox.Lines = null;
-            this.exposureTimeTextBox.Location = new System.Drawing.Point(159, 3);
-            this.exposureTimeTextBox.MaxLength = 32767;
-            this.exposureTimeTextBox.Multiline = false;
-            this.exposureTimeTextBox.Name = "exposureTimeTextBox";
-            this.exposureTimeTextBox.ReadOnly = false;
-            this.exposureTimeTextBox.Size = new System.Drawing.Size(151, 33);
-            this.exposureTimeTextBox.Style = ReaLTaiizor.Enum.Metro.Style.Light;
-            this.exposureTimeTextBox.StyleManager = null;
-            this.exposureTimeTextBox.TabIndex = 4;
-            this.exposureTimeTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.exposureTimeTextBox.ThemeAuthor = "Taiizor";
-            this.exposureTimeTextBox.ThemeName = "MetroLight";
-            this.exposureTimeTextBox.UseSystemPasswordChar = false;
-            this.exposureTimeTextBox.WatermarkText = "";
             // 
             // gainTextBox
             // 
@@ -319,37 +280,76 @@
             this.gainTextBox.UseSystemPasswordChar = false;
             this.gainTextBox.WatermarkText = "";
             // 
-            // frameRateTextBox
+            // moonLabel1
             // 
-            this.frameRateTextBox.AutoCompleteCustomSource = null;
-            this.frameRateTextBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
-            this.frameRateTextBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
-            this.frameRateTextBox.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.frameRateTextBox.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
-            this.frameRateTextBox.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.frameRateTextBox.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
-            this.frameRateTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.frameRateTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.frameRateTextBox.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
-            this.frameRateTextBox.Image = null;
-            this.frameRateTextBox.IsDerivedStyle = true;
-            this.frameRateTextBox.Lines = null;
-            this.frameRateTextBox.Location = new System.Drawing.Point(159, 3);
-            this.frameRateTextBox.MaxLength = 32767;
-            this.frameRateTextBox.Multiline = false;
-            this.frameRateTextBox.Name = "frameRateTextBox";
-            this.frameRateTextBox.ReadOnly = false;
-            this.frameRateTextBox.Size = new System.Drawing.Size(151, 33);
-            this.frameRateTextBox.Style = ReaLTaiizor.Enum.Metro.Style.Light;
-            this.frameRateTextBox.StyleManager = null;
-            this.frameRateTextBox.TabIndex = 6;
-            this.frameRateTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.frameRateTextBox.ThemeAuthor = "Taiizor";
-            this.frameRateTextBox.ThemeName = "MetroLight";
-            this.frameRateTextBox.UseSystemPasswordChar = false;
-            this.frameRateTextBox.WatermarkText = "";
+            this.moonLabel1.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.moonLabel1.AutoSize = true;
+            this.moonLabel1.BackColor = System.Drawing.Color.Transparent;
+            this.moonLabel1.ForeColor = System.Drawing.Color.White;
+            this.moonLabel1.Location = new System.Drawing.Point(3, 13);
+            this.moonLabel1.Name = "moonLabel1";
+            this.moonLabel1.Size = new System.Drawing.Size(29, 13);
+            this.moonLabel1.TabIndex = 3;
+            this.moonLabel1.Text = "Gain";
             // 
-            // SettingCameraDialog
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Controls.Add(this.exposureTimeLabel, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.exposureTimeTextBox, 1, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 57);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 1;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(313, 39);
+            this.tableLayoutPanel3.TabIndex = 7;
+            // 
+            // exposureTimeLabel
+            // 
+            this.exposureTimeLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.exposureTimeLabel.AutoSize = true;
+            this.exposureTimeLabel.BackColor = System.Drawing.Color.Transparent;
+            this.exposureTimeLabel.ForeColor = System.Drawing.Color.White;
+            this.exposureTimeLabel.Location = new System.Drawing.Point(3, 13);
+            this.exposureTimeLabel.Name = "exposureTimeLabel";
+            this.exposureTimeLabel.Size = new System.Drawing.Size(77, 13);
+            this.exposureTimeLabel.TabIndex = 3;
+            this.exposureTimeLabel.Text = "Exposure Time";
+            // 
+            // exposureTimeTextBox
+            // 
+            this.exposureTimeTextBox.AutoCompleteCustomSource = null;
+            this.exposureTimeTextBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
+            this.exposureTimeTextBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
+            this.exposureTimeTextBox.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.exposureTimeTextBox.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
+            this.exposureTimeTextBox.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.exposureTimeTextBox.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
+            this.exposureTimeTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.exposureTimeTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.exposureTimeTextBox.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.exposureTimeTextBox.Image = null;
+            this.exposureTimeTextBox.IsDerivedStyle = true;
+            this.exposureTimeTextBox.Lines = null;
+            this.exposureTimeTextBox.Location = new System.Drawing.Point(159, 3);
+            this.exposureTimeTextBox.MaxLength = 32767;
+            this.exposureTimeTextBox.Multiline = false;
+            this.exposureTimeTextBox.Name = "exposureTimeTextBox";
+            this.exposureTimeTextBox.ReadOnly = false;
+            this.exposureTimeTextBox.Size = new System.Drawing.Size(151, 33);
+            this.exposureTimeTextBox.Style = ReaLTaiizor.Enum.Metro.Style.Light;
+            this.exposureTimeTextBox.StyleManager = null;
+            this.exposureTimeTextBox.TabIndex = 4;
+            this.exposureTimeTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.exposureTimeTextBox.ThemeAuthor = "Taiizor";
+            this.exposureTimeTextBox.ThemeName = "MetroLight";
+            this.exposureTimeTextBox.UseSystemPasswordChar = false;
+            this.exposureTimeTextBox.WatermarkText = "";
+            // 
+            // CameraDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -360,10 +360,10 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "SettingCameraDialog";
+            this.Name = "CameraDialog";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.tableLayoutPanel4.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();

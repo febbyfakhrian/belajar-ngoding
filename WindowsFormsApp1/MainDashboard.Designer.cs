@@ -69,10 +69,10 @@
             this.tableLayoutPanel14 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel19 = new System.Windows.Forms.TableLayoutPanel();
             this.panel7 = new ReaLTaiizor.Controls.Panel();
-            this.stopCamera = new System.Windows.Forms.PictureBox();
+            this.stopCameraBtn = new System.Windows.Forms.PictureBox();
             this.smallLabel4 = new ReaLTaiizor.Controls.SmallLabel();
             this.tableLayoutPanel18 = new System.Windows.Forms.TableLayoutPanel();
-            this.panel6 = new ReaLTaiizor.Controls.Panel();
+            this.grabCameraPanel = new ReaLTaiizor.Controls.Panel();
             this.btn_Grab = new System.Windows.Forms.PictureBox();
             this.smallLabel3 = new ReaLTaiizor.Controls.SmallLabel();
             this.tableLayoutPanel17 = new System.Windows.Forms.TableLayoutPanel();
@@ -98,6 +98,7 @@
             this.pathLogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.databaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pLCToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.gRPCToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.systemToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -178,9 +179,9 @@
             this.tableLayoutPanel14.SuspendLayout();
             this.tableLayoutPanel19.SuspendLayout();
             this.panel7.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.stopCamera)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.stopCameraBtn)).BeginInit();
             this.tableLayoutPanel18.SuspendLayout();
-            this.panel6.SuspendLayout();
+            this.grabCameraPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.btn_Grab)).BeginInit();
             this.tableLayoutPanel17.SuspendLayout();
             this.panel5.SuspendLayout();
@@ -654,7 +655,7 @@
             // 
             this.panel7.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.panel7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(146)))), ((int)(((byte)(150)))), ((int)(((byte)(153)))));
-            this.panel7.Controls.Add(this.stopCamera);
+            this.panel7.Controls.Add(this.stopCameraBtn);
             this.panel7.EdgeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(41)))), ((int)(((byte)(50)))));
             this.panel7.Location = new System.Drawing.Point(15, 9);
             this.panel7.Margin = new System.Windows.Forms.Padding(15, 0, 15, 0);
@@ -665,19 +666,20 @@
             this.panel7.TabIndex = 2;
             this.panel7.Text = "panel7";
             // 
-            // stopCamera
+            // stopCameraBtn
             // 
-            this.stopCamera.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.stopCamera.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.stopCamera.Image = ((System.Drawing.Image)(resources.GetObject("stopCamera.Image")));
-            this.stopCamera.InitialImage = ((System.Drawing.Image)(resources.GetObject("stopCamera.InitialImage")));
-            this.stopCamera.Location = new System.Drawing.Point(5, 5);
-            this.stopCamera.Name = "stopCamera";
-            this.stopCamera.Size = new System.Drawing.Size(46, 39);
-            this.stopCamera.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-            this.stopCamera.TabIndex = 2;
-            this.stopCamera.TabStop = false;
-            this.stopCamera.Click += new System.EventHandler(this.stopCamera_Click);
+            this.stopCameraBtn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.stopCameraBtn.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.stopCameraBtn.Enabled = false;
+            this.stopCameraBtn.Image = ((System.Drawing.Image)(resources.GetObject("stopCameraBtn.Image")));
+            this.stopCameraBtn.InitialImage = ((System.Drawing.Image)(resources.GetObject("stopCameraBtn.InitialImage")));
+            this.stopCameraBtn.Location = new System.Drawing.Point(5, 5);
+            this.stopCameraBtn.Name = "stopCameraBtn";
+            this.stopCameraBtn.Size = new System.Drawing.Size(46, 39);
+            this.stopCameraBtn.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.stopCameraBtn.TabIndex = 2;
+            this.stopCameraBtn.TabStop = false;
+            this.stopCameraBtn.Click += new System.EventHandler(this.stopCamera_Click);
             // 
             // smallLabel4
             // 
@@ -696,7 +698,7 @@
             // 
             this.tableLayoutPanel18.ColumnCount = 1;
             this.tableLayoutPanel18.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel18.Controls.Add(this.panel6, 0, 0);
+            this.tableLayoutPanel18.Controls.Add(this.grabCameraPanel, 0, 0);
             this.tableLayoutPanel18.Controls.Add(this.smallLabel3, 0, 1);
             this.tableLayoutPanel18.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel18.Location = new System.Drawing.Point(23, 124);
@@ -707,25 +709,26 @@
             this.tableLayoutPanel18.Size = new System.Drawing.Size(86, 95);
             this.tableLayoutPanel18.TabIndex = 2;
             // 
-            // panel6
+            // grabCameraPanel
             // 
-            this.panel6.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.panel6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(146)))), ((int)(((byte)(150)))), ((int)(((byte)(153)))));
-            this.panel6.Controls.Add(this.btn_Grab);
-            this.panel6.EdgeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(41)))), ((int)(((byte)(50)))));
-            this.panel6.Location = new System.Drawing.Point(15, 9);
-            this.panel6.Margin = new System.Windows.Forms.Padding(15, 0, 15, 0);
-            this.panel6.Name = "panel6";
-            this.panel6.Padding = new System.Windows.Forms.Padding(5);
-            this.panel6.Size = new System.Drawing.Size(56, 49);
-            this.panel6.SmoothingType = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-            this.panel6.TabIndex = 2;
-            this.panel6.Text = "panel6";
+            this.grabCameraPanel.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.grabCameraPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(146)))), ((int)(((byte)(150)))), ((int)(((byte)(153)))));
+            this.grabCameraPanel.Controls.Add(this.btn_Grab);
+            this.grabCameraPanel.EdgeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(41)))), ((int)(((byte)(50)))));
+            this.grabCameraPanel.Location = new System.Drawing.Point(15, 9);
+            this.grabCameraPanel.Margin = new System.Windows.Forms.Padding(15, 0, 15, 0);
+            this.grabCameraPanel.Name = "grabCameraPanel";
+            this.grabCameraPanel.Padding = new System.Windows.Forms.Padding(5);
+            this.grabCameraPanel.Size = new System.Drawing.Size(56, 49);
+            this.grabCameraPanel.SmoothingType = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+            this.grabCameraPanel.TabIndex = 2;
+            this.grabCameraPanel.Text = "panel6";
             // 
             // btn_Grab
             // 
             this.btn_Grab.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btn_Grab.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Grab.Enabled = false;
             this.btn_Grab.Image = ((System.Drawing.Image)(resources.GetObject("btn_Grab.Image")));
             this.btn_Grab.Location = new System.Drawing.Point(5, 5);
             this.btn_Grab.Name = "btn_Grab";
@@ -789,7 +792,7 @@
             this.openCamera.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.openCamera.TabIndex = 2;
             this.openCamera.TabStop = false;
-            this.openCamera.Click += new System.EventHandler(this.openCamera_Click);
+            this.openCamera.Click += new System.EventHandler(this.OpenCamera_Click);
             // 
             // smallLabel2
             // 
@@ -989,7 +992,7 @@
             this.crownMenuStrip1.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
             this.crownMenuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
             this.crownMenuStrip1.ShowItemToolTips = true;
-            this.crownMenuStrip1.Size = new System.Drawing.Size(256, 24);
+            this.crownMenuStrip1.Size = new System.Drawing.Size(255, 24);
             this.crownMenuStrip1.TabIndex = 5;
             this.crownMenuStrip1.Text = "crownMenuStrip1";
             // 
@@ -1009,7 +1012,8 @@
             this.mESToolStripMenuItem,
             this.pathLogToolStripMenuItem,
             this.databaseToolStripMenuItem,
-            this.pLCToolStripMenuItem1});
+            this.pLCToolStripMenuItem1,
+            this.gRPCToolStripMenuItem1});
             this.settingToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.settingToolStripMenuItem.Name = "settingToolStripMenuItem";
             this.settingToolStripMenuItem.Size = new System.Drawing.Size(56, 20);
@@ -1060,6 +1064,15 @@
             this.pLCToolStripMenuItem1.Text = "PLC";
             this.pLCToolStripMenuItem1.Click += new System.EventHandler(this.pLCToolStripMenuItem1_Click);
             // 
+            // gRPCToolStripMenuItem1
+            // 
+            this.gRPCToolStripMenuItem1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
+            this.gRPCToolStripMenuItem1.ForeColor = System.Drawing.Color.White;
+            this.gRPCToolStripMenuItem1.Name = "gRPCToolStripMenuItem1";
+            this.gRPCToolStripMenuItem1.Size = new System.Drawing.Size(122, 22);
+            this.gRPCToolStripMenuItem1.Text = "GRPC";
+            this.gRPCToolStripMenuItem1.Click += new System.EventHandler(this.gRPCToolStripMenuItem1_Click);
+            // 
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
@@ -1067,7 +1080,7 @@
             this.toolStripMenuItem1});
             this.toolsToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
             // 
             // toolStripMenuItem1
@@ -1121,7 +1134,7 @@
             this.button1.Image = null;
             this.button1.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.button1.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.button1.Location = new System.Drawing.Point(259, 3);
+            this.button1.Location = new System.Drawing.Point(258, 3);
             this.button1.Name = "button1";
             this.button1.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.button1.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -1268,7 +1281,7 @@
             this.tableLayoutPanel3.ColumnCount = 3;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.94737F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.05263F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 247F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 252F));
             this.tableLayoutPanel3.Controls.Add(this.pictureBox2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.pictureBox3, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.tableLayoutPanel5, 2, 0);
@@ -1298,7 +1311,7 @@
             // 
             this.pictureBox3.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.pictureBox3.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox3.Image")));
-            this.pictureBox3.Location = new System.Drawing.Point(-9, 21);
+            this.pictureBox3.Location = new System.Drawing.Point(-12, 21);
             this.pictureBox3.Name = "pictureBox3";
             this.pictureBox3.Size = new System.Drawing.Size(1, 21);
             this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
@@ -1312,12 +1325,12 @@
             this.tableLayoutPanel5.Controls.Add(this.label12, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.label13, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(-20, 4);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(-25, 4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 41.07143F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 58.92857F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(241, 56);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(246, 56);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
             // label12
@@ -1881,10 +1894,10 @@
             this.tableLayoutPanel19.ResumeLayout(false);
             this.tableLayoutPanel19.PerformLayout();
             this.panel7.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.stopCamera)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.stopCameraBtn)).EndInit();
             this.tableLayoutPanel18.ResumeLayout(false);
             this.tableLayoutPanel18.PerformLayout();
-            this.panel6.ResumeLayout(false);
+            this.grabCameraPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.btn_Grab)).EndInit();
             this.tableLayoutPanel17.ResumeLayout(false);
             this.tableLayoutPanel17.PerformLayout();
@@ -2048,8 +2061,8 @@
         private ReaLTaiizor.Controls.Panel panel8;
         private System.Windows.Forms.PictureBox pictureBox11;
         private ReaLTaiizor.Controls.Panel panel7;
-        private System.Windows.Forms.PictureBox stopCamera;
-        private ReaLTaiizor.Controls.Panel panel6;
+        private System.Windows.Forms.PictureBox stopCameraBtn;
+        private ReaLTaiizor.Controls.Panel grabCameraPanel;
         private System.Windows.Forms.PictureBox btn_Grab;
         private ReaLTaiizor.Controls.Panel panel5;
         private System.Windows.Forms.PictureBox openCamera;
@@ -2068,6 +2081,7 @@
         private ReaLTaiizor.Controls.AirRadioButton componentResultInspectionRadioButton;
         private ReaLTaiizor.Controls.AirRadioButton frameResultInspectionRadioButton;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem gRPCToolStripMenuItem1;
     }
 }
 

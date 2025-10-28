@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using WindowsFormsApp1.Core.Interfaces;
+using WindowsFormsApp1.Infrastructure.Data;
 
 namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
 {
@@ -22,8 +23,51 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
         public event Action<string> BoxesReceived;
         public event Action OnDisconnected;
 
-        public GrpcService(string host = "localhost:50052")
-            => _host = host ?? throw new ArgumentNullException(nameof(host));
+        // Constructor that accepts ISettingsService and retrieves host from settings
+        public GrpcService(ISettingsService settingsService)
+        {
+            // Try to get the gRPC server URL from settings
+            string host = "localhost:50052"; // Default fallback
+            
+            if (settingsService != null)
+            {
+                try
+                {
+                    var savedHost = settingsService.GetSetting<string>("grpc", "server_url");
+                    if (!string.IsNullOrEmpty(savedHost))
+                    {
+                        host = savedHost;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Grpc] Error retrieving settings: {ex.Message}");
+                    // Fall back to default host
+                }
+            }
+            
+            _host = host ?? "localhost:50052";
+        }
+
+        // Parameterless constructor for backward compatibility - uses default settings
+        public GrpcService() : this(GetDefaultSettingsService())
+        {
+        }
+
+        // Helper method to get a default settings service
+        private static ISettingsService GetDefaultSettingsService()
+        {
+            try
+            {
+                // This would typically be resolved through DI in a real application
+                // For backward compatibility, we'll return null which will cause it to use the default host
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         public async Task<bool> StartAsync()
         {
@@ -97,6 +141,15 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
 
             return response ?? new ImageResponse();
         }
+
+        public AsyncDuplexStreamingCall<ImageRequest, ImageResponse> ProcessImageStream(CancellationToken ct = default(CancellationToken))
+        {
+            if (_client == null)
+                throw new InvalidOperationException("Not connected");
+
+            return _client.ProcessImageStream(cancellationToken: ct);
+        }
+
 
         public async Task<DefaultResponse> UpdateConfigAsync(string path, CancellationToken ct = default)
         {

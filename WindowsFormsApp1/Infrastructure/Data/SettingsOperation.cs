@@ -72,13 +72,13 @@ namespace WindowsFormsApp1.Infrastructure.Data
             }
 
             string sql = @"
-            INSERT INTO settings (group_name, key, value, updated_at)
-            VALUES (@group, @key, @value, CURRENT_TIMESTAMP)
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value,
-                updated_at = CURRENT_TIMESTAMP;
+                INSERT INTO settings (group_name, key, value, updated_at)
+                VALUES (@group, @key, @value, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = CURRENT_TIMESTAMP;
             ";
-
+            
             using (var cmd = _connection.CreateCommand())
             {
                 cmd.CommandText = sql;

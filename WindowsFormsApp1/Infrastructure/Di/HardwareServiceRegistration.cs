@@ -18,7 +18,8 @@ namespace WindowsFormsApp1.Infrastructure.Di
                 new CameraManager(new ConcurrentQueue<byte[]>()));
             services.AddSingleton<ICameraService>(provider => provider.GetRequiredService<CameraManager>());
             // IPlcService registration moved to Program.cs to handle configuration properly
-            services.AddSingleton<IGrpcService, Infrastructure.Hardware.Grpc.GrpcService>(); // Explicitly specify the full namespace
+            services.AddSingleton<IGrpcService>(provider => 
+                new Infrastructure.Hardware.Grpc.GrpcService(provider.GetService<ISettingsService>())); // Provide settings service to GrpcService
             Debug.WriteLine("Hardware services registered.");
         }
     }

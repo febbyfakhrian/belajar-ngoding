@@ -370,10 +370,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Common\Configuration\AppSettings.cs" />
-    <Compile Include="Core\Common\Configuration\ConfigurationNotifier.cs" />
-    <Compile Include="Core\Common\Configuration\ConfigurationProvider.cs" />
-    <Compile Include="Core\Common\Configuration\ConfigurationValidator.cs" />
     <Compile Include="Core\Common\Exceptions\CameraException.cs" />
     <Compile Include="Core\Common\Exceptions\GrpcException.cs" />
     <Compile Include="Core\Common\Exceptions\PlcException.cs" />
@@ -421,7 +417,6 @@
     <Compile Include="Infrastructure\Hardware\PLC\PlcOperation.cs" />
     <Compile Include="Infrastructure\Hardware\PLC\PlcServiceFactory.cs" />
     <Compile Include="Infrastructure\Services\CycleTimer.cs" />
-    <Compile Include="Infrastructure\Services\GrpcService.cs" />
     <Compile Include="Infrastructure\Services\HealthCheckService.cs" />
     <Compile Include="Infrastructure\Services\ImageDbOperation.cs" />
     <Compile Include="Infrastructure\Services\InspectionLogger.cs" />
@@ -495,6 +490,12 @@
     <Compile Include="Presentation\Forms\SettingsMenu\MESDialog.Designer.cs">
       <DependentUpon>MESDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\GrpcDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\GrpcDialog.Designer.cs">
+      <DependentUpon>GrpcDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Presentation\Forms\SettingsMenu\PathLogDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -544,6 +545,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\SettingsMenu\MESDialog.resx">
       <DependentUpon>MESDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\GrpcDialog.resx">
+      <DependentUpon>GrpcDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\SettingsMenu\PathLogDialog.resx">
       <DependentUpon>PathLogDialog.cs</DependentUpon>

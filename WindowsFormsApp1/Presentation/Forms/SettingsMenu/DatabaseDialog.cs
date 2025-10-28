@@ -83,8 +83,6 @@ namespace WindowsFormsApp1
                     {
                         connection.Open();
                     }
-                    
-                    dbHelper.CreateTableIfNotExists();
                 }
                 else
                 {
@@ -93,7 +91,6 @@ namespace WindowsFormsApp1
                     DatabaseDialog.DbConnection.Open();
 
                     DatabaseDialog.DbHelper = new ImageDbOperation(DatabaseDialog.DbConnection);
-                    DatabaseDialog.DbHelper.CreateTableIfNotExists();
                 }
 
                 MessageBox.Show($"Database siap: {selectedDbPath}");

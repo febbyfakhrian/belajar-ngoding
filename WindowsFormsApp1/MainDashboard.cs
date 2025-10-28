@@ -23,13 +23,15 @@ using WindowsFormsApp1.Core.Entities.Models;
 using static WindowsFormsApp1.Core.Common.Helpers.VideoGrabber;
 using WindowsFormsApp1.Core.Domain.Flow.Dag;
 using WindowsFormsApp1.Presentation.Flow;
+using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
+using WindowsFormsApp1.Core.Interfaces;
 
 namespace WindowsFormsApp1
 {
     public partial class MainDashboard : Form
     {
         // --------- Services / State ----------
-        private readonly GrpcService _grpc = new GrpcService();
+        private readonly IGrpcService _grpc;
         private readonly ImageManipulationUtils _imageUtil = new ImageManipulationUtils();
         private readonly ImageGrabber _grabber = new ImageGrabber();
         //private readonly FileUtils _fileUtils = new FileUtils();
@@ -60,6 +62,7 @@ namespace WindowsFormsApp1
         private IServiceProvider _provider;
         private IFlowContext _ctx;
         private CameraManager _cam;
+        private Core.Interfaces.IPlcService _plc; // Add PLC service field
         private const int RECONNECT_INTERVAL_MS = 3000;
         private FileUtils _fileUtils;
 
@@ -75,18 +78,17 @@ namespace WindowsFormsApp1
             _ctx = provider.GetRequiredService<IFlowContext>();
             _fileUtils = provider.GetRequiredService<FileUtils>();
             _cam = provider.GetRequiredService<CameraManager>(); // instance A
+            _plc = provider.GetRequiredService<Core.Interfaces.IPlcService>(); // Initialize PLC service
+            _grpc = provider.GetRequiredService<IGrpcService>(); // Initialize gRPC service from DI container
 
             _cam.Error += msg => MessageBox.Show(msg);
             _grabber.FramePreview += OnFramePreview;
-            _grpc.OnDisconnected += ScheduleReconnect;
 
             // Safe timer init
             _reconnectTimer = new System.Timers.Timer(RECONNECT_INTERVAL_MS)
             {
                 AutoReset = true
             };
-
-            _reconnectTimer.Elapsed += (s, e) => TryGrpcReconnect();
         }
 
         // ------------- Form lifecycle -------------
@@ -99,17 +101,10 @@ namespace WindowsFormsApp1
             DeviceListAcq();
 
             // gRPC startup
-            var ok = await _grpc.StartAsync();
-            if (!ok)
-            {
-                MessageBox.Show("Gagal koneksi ke Python server 50052");
-                return;
-            }
+            await _grpc.StartAsync();
 
             showSidebarBtn.Visible = true;
             showSidebarBtn.BringToFront();
-
-            _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia
         }
 
         private async void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -128,7 +123,7 @@ namespace WindowsFormsApp1
 
             // Dispose devices
             if (_cam != null) _cam.Dispose();
-            if (_grpc != null) await _grpc.DisposeAsync();
+            if (_grpc != null) await _grpc.StopAsync();
         }
 
         // ------------- UI helpers -------------
@@ -337,7 +332,6 @@ namespace WindowsFormsApp1
 
                 UInt32 fakeWidth = 1920;
                 UInt32 fakeHeight = 1080;
-                UInt32 fakePixelType = (UInt32)MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono8;
 
                 _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
                 _convertDstBufLen = fakeWidth * fakeHeight;
@@ -510,8 +504,34 @@ namespace WindowsFormsApp1
 
         // ------------- Buttons / Menu -------------
 
-        private async void openCamera_Click(object sender, EventArgs e)
+        private void OpenCamera_Click(object sender, EventArgs e)
         {
+            // Check if PLC is connected before allowing camera operations
+            if (_plc == null || !_plc.IsOpen)
+            {
+                ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                return;
+            }
+
+            // Check if GRPC is connected before allowing camera operations
+            if (_grpc == null)
+            {
+                ShowErrorMsg("GRPC service is not initialized. Please restart the application.", 0);
+                return;
+            }
+
+            // Use reflection to check if the client is connected
+            var clientField = typeof(GrpcService).GetField("_client", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (clientField != null)
+            {
+                var client = clientField.GetValue(_grpc);
+                if (client == null)
+                {
+                    ShowErrorMsg("GRPC is not connected. Please establish GRPC connection before opening camera.", 0);
+                    return;
+                }
+            }
+
             if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
                 ShowErrorMsg("No device, please select", 0);
@@ -528,6 +548,10 @@ namespace WindowsFormsApp1
                 ShowErrorMsg("Failed to open device", 0);
                 return;
             }
+
+            btn_Grab.Enabled = true;
+
+            _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia
         }
 
         private async void btnStartGrab_Click(object sender, EventArgs e)
@@ -569,6 +593,7 @@ namespace WindowsFormsApp1
 
             _ctx.Trigger = "CAMERA_STARTED";
             pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
+            stopCameraBtn.Enabled = true;
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
@@ -717,17 +742,6 @@ namespace WindowsFormsApp1
         {
             if (_reconnectTimer != null && !_reconnectTimer.Enabled)
                 _reconnectTimer.Start();
-        }
-
-        private async void TryGrpcReconnect()
-        {
-            try
-            {
-                if (_grpc == null) return;
-                var ok = await _grpc.StartAsync();
-                if (ok && _reconnectTimer != null) _reconnectTimer.Stop();
-            }
-            catch { /* keep retrying */ }
         }
 
         // ------------- UI Rendering (unchanged logic, cleaned) -------------
@@ -1176,6 +1190,13 @@ namespace WindowsFormsApp1
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
             var dialog = new DiagramConfigurationForm();
+
+            dialog.Show();
+        }
+
+        private void gRPCToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            var dialog = new GRPCDialog(_provider);
 
             dialog.Show();
         }

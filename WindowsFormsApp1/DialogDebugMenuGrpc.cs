@@ -1,4 +1,4 @@
-﻿using Api;
+﻿﻿﻿using Api;
 using Grpc.Core;
 using System;
 using System.Collections.Concurrent;
@@ -219,7 +219,7 @@ namespace WindowsFormsApp1
         {
             try
             {
-                using (var call = _grpc.CreateImageStream())
+                using (var call = _grpc.ProcessImageStream())
                 {
                     // Task untuk baca response dari server
                     var readTask = Task.Run(async () =>
@@ -384,7 +384,7 @@ namespace WindowsFormsApp1
         {
             try
             {
-                using (var call = _grpc.CreateImageStream())
+                using (var call = _grpc.ProcessImageStream())
                 {
                     // Task untuk baca response dari server
                     var readTask = Task.Run(async () =>

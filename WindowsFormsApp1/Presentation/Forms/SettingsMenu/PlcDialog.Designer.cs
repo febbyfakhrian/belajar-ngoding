@@ -31,7 +31,6 @@
             this.button1 = new ReaLTaiizor.Controls.Button();
             this.comboBoxDevices = new System.Windows.Forms.ComboBox();
             this.connectBtn = new ReaLTaiizor.Controls.Button();
-            this.flowMain = new System.Windows.Forms.FlowLayoutPanel();
             this.label3 = new System.Windows.Forms.Label();
             this.inputCommandPlc = new ReaLTaiizor.Controls.BigTextBox();
             this.plcLogBox = new System.Windows.Forms.RichTextBox();
@@ -39,6 +38,7 @@
             this.baudRateTextBox = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.flowMain = new System.Windows.Forms.FlowLayoutPanel();
             this.SuspendLayout();
             // 
             // button1
@@ -52,7 +52,7 @@
             this.button1.Image = null;
             this.button1.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.button1.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.button1.Location = new System.Drawing.Point(344, 18);
+            this.button1.Location = new System.Drawing.Point(389, 17);
             this.button1.Name = "button1";
             this.button1.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.button1.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -87,24 +87,16 @@
             this.connectBtn.Name = "connectBtn";
             this.connectBtn.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.connectBtn.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
-            this.connectBtn.Size = new System.Drawing.Size(76, 28);
+            this.connectBtn.Size = new System.Drawing.Size(108, 28);
             this.connectBtn.TabIndex = 12;
             this.connectBtn.Text = "Connect";
             this.connectBtn.TextAlignment = System.Drawing.StringAlignment.Center;
             this.connectBtn.Click += new System.EventHandler(this.connectBtn_Click);
             // 
-            // flowMain
-            // 
-            this.flowMain.AutoScroll = true;
-            this.flowMain.Location = new System.Drawing.Point(438, 22);
-            this.flowMain.Name = "flowMain";
-            this.flowMain.Size = new System.Drawing.Size(324, 103);
-            this.flowMain.TabIndex = 16;
-            // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(435, 5);
+            this.label3.Location = new System.Drawing.Point(474, 5);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(43, 13);
             this.label3.TabIndex = 18;
@@ -128,9 +120,9 @@
             // 
             // plcLogBox
             // 
-            this.plcLogBox.Location = new System.Drawing.Point(11, 144);
+            this.plcLogBox.Location = new System.Drawing.Point(2, 246);
             this.plcLogBox.Name = "plcLogBox";
-            this.plcLogBox.Size = new System.Drawing.Size(751, 175);
+            this.plcLogBox.Size = new System.Drawing.Size(799, 175);
             this.plcLogBox.TabIndex = 22;
             this.plcLogBox.Text = "";
             // 
@@ -182,11 +174,19 @@
             this.label6.TabIndex = 26;
             this.label6.Text = "Baud Rate";
             // 
+            // flowMain
+            // 
+            this.flowMain.AutoScroll = true;
+            this.flowMain.Location = new System.Drawing.Point(477, 22);
+            this.flowMain.Name = "flowMain";
+            this.flowMain.Size = new System.Drawing.Size(324, 218);
+            this.flowMain.TabIndex = 16;
+            // 
             // PlcDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(771, 330);
+            this.ClientSize = new System.Drawing.Size(816, 433);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
@@ -198,8 +198,12 @@
             this.Controls.Add(this.flowMain);
             this.Controls.Add(this.connectBtn);
             this.Controls.Add(this.comboBoxDevices);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "PlcDialog";
-            this.Text = "Form3";
+            this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "PLC Dialog";
             this.Load += new System.EventHandler(this.DialogDebugMenuPlc_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -210,7 +214,6 @@
         private ReaLTaiizor.Controls.Button button1;
         private System.Windows.Forms.ComboBox comboBoxDevices;
         private ReaLTaiizor.Controls.Button connectBtn;
-        private System.Windows.Forms.FlowLayoutPanel flowMain;
         private System.Windows.Forms.Label label3;
         private ReaLTaiizor.Controls.BigTextBox inputCommandPlc;
         private System.Windows.Forms.RichTextBox plcLogBox;
@@ -218,5 +221,6 @@
         private System.Windows.Forms.TextBox baudRateTextBox;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.FlowLayoutPanel flowMain;
     }
 }

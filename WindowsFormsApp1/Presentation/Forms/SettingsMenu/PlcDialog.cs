@@ -48,11 +48,12 @@ namespace WindowsFormsApp1
 
             GenerateButtonsFromClass(flowMain, typeof(WritePLCAddress));
         }
-
+           
         private void LoadComPorts()
         {
             comboBoxDevices.Items.Clear();
             comboBoxDevices.Items.AddRange(SerialPort.GetPortNames());
+            
             if (comboBoxDevices.Items.Count > 0)
                 comboBoxDevices.SelectedIndex = 0;
             else
@@ -256,6 +257,9 @@ namespace WindowsFormsApp1
                     // Buat instance baru (atau reuse) dan buka
                     plcOperation.Open();
 
+                    // Save settings to database only after successful connection
+                    SavePlcSettingsToDatabase(portName, baudRateTextBox.Text);
+
                     connectBtn.Text = "Disconnect";
                     comboBoxDevices.Enabled = false;
                     MessageBox.Show($"Terkoneksi ke {portName}");
@@ -268,6 +272,34 @@ namespace WindowsFormsApp1
             catch (Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}");
+            }
+        }
+
+        // Helper method to save PLC settings to the database
+        private void SavePlcSettingsToDatabase(string portName, string baudRate)
+        {
+            try
+            {
+                // Get the settings service from DI
+                var settingsService = _serviceProvider?.GetRequiredService<ISettingsService>();
+                if (settingsService != null)
+                {
+                    // Save PLC port and baud rate to settings database
+                    settingsService.SetSetting("plc", "serial_port", portName);
+                    settingsService.SetSetting("plc", "baud_rate", baudRate);
+                    
+                    Console.WriteLine($"[PLC] Settings saved - Port: {portName}, Baud Rate: {baudRate}");
+                }
+                else
+                {
+                    Console.WriteLine("[PLC] Settings service not available, cannot save settings");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PLC] Error saving settings: {ex.Message}");
+                // We don't show an error message to the user here as the connection was successful
+                // We just log the error for debugging purposes
             }
         }
 
