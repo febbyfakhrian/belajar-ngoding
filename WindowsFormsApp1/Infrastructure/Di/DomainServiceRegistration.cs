@@ -19,6 +19,7 @@ namespace WindowsFormsApp1.Infrastructure.Di
             
             // Domain actions
             services.AddTransient<IFlowAction, PlcLampOnAction>();
+            services.AddTransient<IFlowAction, PlcLampOffAction>();
             services.AddTransient<IFlowAction, PlcSendPassAction>();
             services.AddTransient<IFlowAction, PlcSendFailAction>();
             services.AddTransient<IFlowAction, CameraPrepareAction>();

@@ -22,8 +22,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
             try
             {
                 LogInfo("Processing image via gRPC");
-                Debug.WriteLine(ctx.LastFrame.Length);
-                Debug.WriteLine(ctx.LastImageId);
+
                 var resp = await _grpc.ProcessImageAsync(ctx.LastFrame, ct, ctx.LastImageId);
                 ctx.LastGrpcJson = resp.Result;
 

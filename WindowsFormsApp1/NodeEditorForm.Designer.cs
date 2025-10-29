@@ -31,7 +31,6 @@
             this.stNodeEditor1 = new ST.Library.UI.NodeEditor.STNodeEditor();
             this.stNodeEditorPannel1 = new ST.Library.UI.NodeEditor.STNodeEditorPannel();
             this.stNodePropertyGrid1 = new ST.Library.UI.NodeEditor.STNodePropertyGrid();
-            this.stNodeTreeView1 = new ST.Library.UI.NodeEditor.STNodeTreeView();
             this.SuspendLayout();
             // 
             // stNodeEditor1
@@ -45,7 +44,7 @@
             this.stNodeEditor1.MarkForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.stNodeEditor1.MinimumSize = new System.Drawing.Size(100, 100);
             this.stNodeEditor1.Name = "stNodeEditor1";
-            this.stNodeEditor1.Size = new System.Drawing.Size(361, 400);
+            this.stNodeEditor1.Size = new System.Drawing.Size(1094, 681);
             this.stNodeEditor1.TabIndex = 0;
             this.stNodeEditor1.Text = "stNodeEditor1";
             // 
@@ -77,30 +76,11 @@
             this.stNodePropertyGrid1.Text = "stNodePropertyGrid1";
             this.stNodePropertyGrid1.TitleColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             // 
-            // stNodeTreeView1
-            // 
-            this.stNodeTreeView1.AllowDrop = true;
-            this.stNodeTreeView1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
-            this.stNodeTreeView1.FolderCountColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))));
-            this.stNodeTreeView1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
-            this.stNodeTreeView1.ItemBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.stNodeTreeView1.ItemHoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))));
-            this.stNodeTreeView1.Location = new System.Drawing.Point(743, 12);
-            this.stNodeTreeView1.MinimumSize = new System.Drawing.Size(100, 60);
-            this.stNodeTreeView1.Name = "stNodeTreeView1";
-            this.stNodeTreeView1.ShowFolderCount = true;
-            this.stNodeTreeView1.Size = new System.Drawing.Size(200, 150);
-            this.stNodeTreeView1.TabIndex = 3;
-            this.stNodeTreeView1.Text = "stNodeTreeView1";
-            this.stNodeTreeView1.TextBoxColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
-            this.stNodeTreeView1.TitleColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
-            // 
             // NodeEditorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(955, 722);
-            this.Controls.Add(this.stNodeTreeView1);
+            this.ClientSize = new System.Drawing.Size(1487, 722);
             this.Controls.Add(this.stNodePropertyGrid1);
             this.Controls.Add(this.stNodeEditorPannel1);
             this.Controls.Add(this.stNodeEditor1);
@@ -116,6 +96,5 @@
         private ST.Library.UI.NodeEditor.STNodeEditor stNodeEditor1;
         private ST.Library.UI.NodeEditor.STNodeEditorPannel stNodeEditorPannel1;
         private ST.Library.UI.NodeEditor.STNodePropertyGrid stNodePropertyGrid1;
-        private ST.Library.UI.NodeEditor.STNodeTreeView stNodeTreeView1;
     }
 }

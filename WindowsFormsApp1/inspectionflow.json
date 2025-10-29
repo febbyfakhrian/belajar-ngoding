@@ -10,19 +10,19 @@
     },
     {
       "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c3",
-      "name": "camera-started",
+      "name": "Camera Started",
       "type": "trigger",
       "parameters": { "triggerName": "CAMERA_STARTED" }
     },
     {
       "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c4",
-      "name": "camera-prepare",
+      "name": "Camera Prepare",
       "type": "action",
       "parameters": { "actionKey": "Camera.Prepare" }
     },
     {
       "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c5",
-      "name": "lamp-on",
+      "name": "Lamp On",
       "type": "action",
       "parameters": { "actionKey": "Plc.SubscribeRead" }
     },
@@ -49,6 +49,38 @@
       "name": "Loop End",
       "type": "action",
       "parameters": { "actionKey": "Finalize.Loop" }
+    },
+    {
+      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa4",
+      "name": "Post Loop Condition True",
+      "type": "condition",
+      "parameters": {
+        "conditions": {
+          "loopSuccess": "Context.Vars.node_5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b_success == true"
+        }
+      }
+    },
+    {
+      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa5",
+      "name": "Post Loop Condition False",
+      "type": "condition",
+      "parameters": {
+        "conditions": {
+          "loopFailed": "Context.Vars.node_5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b_success == false"
+        }
+      }
+    },
+    {
+      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa7",
+      "name": "Post Loop Action",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.SendFail" }
+    },
+    {
+      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa8",
+      "name": "PLC Send Pass",
+      "type": "action",
+      "parameters": { "actionKey": "Plc.SendPass" }
     }
   ],
   "connections": {
@@ -56,36 +88,36 @@
       "main": [
         [
           {
-            "node": "camera-started",
+            "node": "Camera Started",
             "key": "main",
             "index": 0
           }
         ]
       ]
     },
-    "camera-started": {
+    "Camera Started": {
       "main": [
         [
           {
-            "node": "camera-prepare",
+            "node": "Camera Prepare",
             "key": "main",
             "index": 0
           }
         ]
       ]
     },
-    "camera-prepare": {
+    "Camera Prepare": {
       "main": [
         [
           {
-            "node": "lamp-on",
+            "node": "Lamp On",
             "key": "main",
             "index": 0
           }
         ]
       ]
     },
-    "lamp-on": {
+    "Lamp On": {
       "main": [
         [
           {
@@ -139,7 +171,44 @@
       ]
     },
     "Loop End": {
-      "main": []
+      "main": [
+        [
+          {
+            "node": "Post Loop Condition True",
+            "key": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Loop Condition False",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Loop Condition True": {
+      "main": [
+        [
+          {
+            "node": "PLC Send Pass",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Loop Condition False": {
+      "main": [
+        [
+          {
+            "node": "Post Loop Action",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   }
 }

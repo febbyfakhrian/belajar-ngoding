@@ -56,6 +56,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         private readonly ICameraService _cam;
         private readonly ImageDbOperation _db;
         private readonly string _saveRoot;
+        private static readonly object _fileLock = new object(); // Static lock for thread safety across instances
 
         public CameraCaptureFrameAction(ICameraService cam, ImageDbOperation db)
         {
@@ -73,8 +74,6 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
-                LogInfo("Capturing frame");
-                
                 // one-shot frame grab
                 var tcs = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
                 void Handler(byte[] bytes)
@@ -94,8 +93,12 @@ namespace WindowsFormsApp1.Core.Domain.Actions
                     var fileName = $"frame_{DateTime.Now:yyyyMMdd_HHmmss}_{ctx.LastImageId}.bmp";
                     var fullPath = Path.Combine(_saveRoot, fileName);
 
-                    File.WriteAllBytes(fullPath, frame);
-                    _db.InsertImage(fileName, ctx.LastImageId);
+                    // Use lock to ensure thread-safe file access
+                    lock (_fileLock)
+                    {
+                        File.WriteAllBytes(fullPath, frame);
+                        _db.InsertImage(fileName, ctx.LastImageId);
+                    }
 
                     LogInfo($"Frame saved -> {fullPath}");
                 }

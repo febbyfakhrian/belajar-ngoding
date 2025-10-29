@@ -2,41 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace WindowsFormsApp1.Core.Entities.Models { 
-    public static class WorkflowModels
+namespace WindowsFormsApp1.Core.Entities.Models
+{
+    public class Workflow
     {
-        public class WorkflowDef
-        {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public List<NodeDef> Nodes { get; set; }
+        public string Name { get; set; }
+        public string Id { get; set; }
+        public List<Node> Nodes { get; set; }
+        public Dictionary<string, NodeConnections> Connections { get; set; }
+    }
 
-            public WorkflowDef()
-            {
-                Id = string.Empty;
-                Name = string.Empty;
-                Nodes = new List<NodeDef>();
-            }
-        }
+    public class Node
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public Dictionary<string, object> Parameters { get; set; }
+    }
 
-        public class NodeDef
-        {
-            public string Id { get; set; }
-            public string Type { get; set; }
-            public List<string> DependsOn { get; set; }
-            public Dictionary<string, object> Params { get; set; }
-            public double? X { get; set; }
-            public double? Y { get; set; }
+    public class NodeConnections
+    {
+        public List<List<Connection>> Main { get; set; }
+        public List<List<Connection>> Done { get; set; }
+    }
 
-            public NodeDef()
-            {
-                Id = string.Empty;
-                Type = string.Empty;
-                DependsOn = new List<string>();
-                Params = new Dictionary<string, object>();
-            }
-        }
+    public class Connection
+    {
+        public string Node { get; set; }
+        public string Key { get; set; }
+        public int Index { get; set; }
     }
 }

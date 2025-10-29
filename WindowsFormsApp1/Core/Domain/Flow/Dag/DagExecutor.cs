@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -169,6 +169,8 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                     state.CurrentBatch++;
                                     
                                     // Determine which path to take based on current batch count
+                                    // For batchSize=4, we want to execute 4 times, then take "done" path on the 5th
+                                    // So we take "main" path when CurrentBatch < BatchSize
                                     string requiredKey = (state.CurrentBatch >= state.BatchSize) ? "done" : "main";
                                     
                                     // Filter edges to only include those with the required key
@@ -210,7 +212,6 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                         var finished = await Task.WhenAny(running.Values);
                         var id = running.First(kv => kv.Value == finished).Key;
                         running.TryRemove(id, out _);
-                        Debug.WriteLine($"[DAG] Node finished: {id}");
                     }
                     else
                     {
@@ -233,7 +234,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                 switch (node.Type)
                 {
                     case "action":
-                        {
+                         {
                             var key = GetStringValue(node.Parameters,
                                                      "actionKey",
                                                      "UnknownAction");
@@ -241,11 +242,18 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                             if (!_registry.TryGet(key, out var act))
                             {
                                 Debug.WriteLine($"[DAG] ERROR: Action {key} not registered");
+                                // Simpan status gagal
+                                _ctx.Vars[$"node_{node.Id}_executed"] = true;
+                                _ctx.Vars[$"node_{node.Id}_success"] = false;
                                 throw new InvalidOperationException(
                                     $"Action {key} not registered");
                             }
 
                             await act.ExecuteAsync(_ctx, ct);
+                            
+                            // Simpan status sukses
+                            _ctx.Vars[$"node_{node.Id}_executed"] = true;
+                            _ctx.Vars[$"node_{node.Id}_success"] = false;
 
                             /*  no loop-awareness → always reset trigger  */
                             _ctx.Trigger = null;
@@ -296,6 +304,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                             int batchSize = GetIntValue(node.Parameters, "batchSize", 1);
                             
                             // Get or create the state for this split-batches node
+                            // Initialize with CurrentBatch = 0 so the first execution increments it to 1
                             var state = _activeSplitBatches.GetOrAdd(node.Id, new SplitBatchState { BatchSize = batchSize, CurrentBatch = 0 });
                             
                             // Log the current state
@@ -364,12 +373,10 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                             string waitingNodeId,
                                             CancellationToken ct)
         {
-            Debug.WriteLine($"[DAG] WaitTriggerAsync for '{triggerName}' on node '{waitingNodeId}'");
             // fast path
             if (string.Equals(_ctx.Trigger, triggerName,
                               StringComparison.OrdinalIgnoreCase))
             {
-                Debug.WriteLine($"[DAG] Trigger '{triggerName}' already set, continuing immediately");
                 return;
             }
 
@@ -390,7 +397,6 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                   StringComparison.OrdinalIgnoreCase))
                 {
                     _ctx.Trigger = null;
-                    Debug.WriteLine($"[DAG] Consumed trigger '{triggerName}'");
                 }
             });
         }
@@ -436,7 +442,6 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
         ------------------------------------------------------------*/
         private static void Validate(DagDefinition def)
         {
-            Debug.WriteLine($"[DAG] Validating DAG with {def.Nodes.Count} nodes and {def.Connections.Count} connections");
             var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var node in def.Nodes)
             {
@@ -446,52 +451,29 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                 }
             }
                                
-            // Log all node IDs for debugging
-            Debug.WriteLine("[DAG] Valid node IDs:");
-            foreach (var id in ids)
-            {
-                Debug.WriteLine($"  '{id}'");
-            }
-            
-            Debug.WriteLine($"[DAG] Checking {def.Connections.Count} connections...");
-            
             foreach (var c in def.Connections)
             {
-                Debug.WriteLine($"[DAG] Checking connection: '{c.From}' -> '{c.To}'");
-                
                 if (string.IsNullOrEmpty(c.From))
                 {
-                    Debug.WriteLine($"[DAG] ERROR: Edge from is null or empty");
                     throw new InvalidOperationException("Edge from is null or empty");
                 }
                 
                 if (string.IsNullOrEmpty(c.To))
                 {
-                    Debug.WriteLine($"[DAG] ERROR: Edge to is null or empty");
                     throw new InvalidOperationException("Edge to is null or empty");
                 }
                 
                 if (!ids.Contains(c.From))
                 {
-                    Debug.WriteLine($"[DAG] ERROR: Edge from unknown node ID '{c.From}'");
                     // Let's also check if this might be a node name
                     var nodeNameMatch = def.Nodes.FirstOrDefault(n => n.Name.Equals(c.From, StringComparison.OrdinalIgnoreCase));
-                    if (nodeNameMatch != null)
-                    {
-                        Debug.WriteLine($"[DAG] NOTE: Found node with name '{c.From}', but expected ID '{nodeNameMatch.Id}'");
-                    }
                     throw new InvalidOperationException(
                         $"Edge from unknown node ID '{c.From}'");
                 }
                 if (!ids.Contains(c.To))
                 {
-                    Debug.WriteLine($"[DAG] ERROR: Edge to unknown node ID '{c.To}'");
                     // Let's also check if this might be a node name
                     var nodeNameMatch = def.Nodes.FirstOrDefault(n => n.Name.Equals(c.To, StringComparison.OrdinalIgnoreCase));
-                    if (nodeNameMatch != null)
-                    {
-                        Debug.WriteLine($"[DAG] NOTE: Found node with name '{c.To}', but expected ID '{nodeNameMatch.Id}'");
-                    }
                     throw new InvalidOperationException(
                         $"Edge to unknown node ID '{c.To}'");
                 }

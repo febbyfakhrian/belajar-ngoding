@@ -39,6 +39,8 @@
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.flowMain = new System.Windows.Forms.FlowLayoutPanel();
+            this.enablePlcRadioButton = new ReaLTaiizor.Controls.AirRadioButton();
+            this.disablePlcRadioButton = new ReaLTaiizor.Controls.AirRadioButton();
             this.SuspendLayout();
             // 
             // button1
@@ -182,11 +184,45 @@
             this.flowMain.Size = new System.Drawing.Size(324, 218);
             this.flowMain.TabIndex = 16;
             // 
+            // enablePlcRadioButton
+            // 
+            this.enablePlcRadioButton.Checked = false;
+            this.enablePlcRadioButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.enablePlcRadioButton.Customization = "PDw8/+3t7f/m5ub/p6en/2RkZP8=";
+            this.enablePlcRadioButton.Field = 16;
+            this.enablePlcRadioButton.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.enablePlcRadioButton.Image = null;
+            this.enablePlcRadioButton.Location = new System.Drawing.Point(14, 52);
+            this.enablePlcRadioButton.Name = "enablePlcRadioButton";
+            this.enablePlcRadioButton.NoRounding = false;
+            this.enablePlcRadioButton.Size = new System.Drawing.Size(69, 17);
+            this.enablePlcRadioButton.TabIndex = 27;
+            this.enablePlcRadioButton.Text = "Enabled";
+            this.enablePlcRadioButton.Transparent = false;
+            // 
+            // disablePlcRadioButton
+            // 
+            this.disablePlcRadioButton.Checked = false;
+            this.disablePlcRadioButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.disablePlcRadioButton.Customization = "PDw8/+3t7f/m5ub/p6en/2RkZP8=";
+            this.disablePlcRadioButton.Field = 16;
+            this.disablePlcRadioButton.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.disablePlcRadioButton.Image = null;
+            this.disablePlcRadioButton.Location = new System.Drawing.Point(89, 52);
+            this.disablePlcRadioButton.Name = "disablePlcRadioButton";
+            this.disablePlcRadioButton.NoRounding = false;
+            this.disablePlcRadioButton.Size = new System.Drawing.Size(74, 16);
+            this.disablePlcRadioButton.TabIndex = 28;
+            this.disablePlcRadioButton.Text = "Disable";
+            this.disablePlcRadioButton.Transparent = false;
+            // 
             // PlcDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(816, 433);
+            this.Controls.Add(this.disablePlcRadioButton);
+            this.Controls.Add(this.enablePlcRadioButton);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
@@ -222,5 +258,7 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.FlowLayoutPanel flowMain;
+        private ReaLTaiizor.Controls.AirRadioButton enablePlcRadioButton;
+        private ReaLTaiizor.Controls.AirRadioButton disablePlcRadioButton;
     }
 }

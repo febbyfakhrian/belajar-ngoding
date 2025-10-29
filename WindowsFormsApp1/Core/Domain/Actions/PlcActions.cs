@@ -32,6 +32,19 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         }
     }
 
+    public sealed class PlcLampOffAction : BaseAction
+    {
+        public override string Key => "Plc.LampOff";
+        private readonly IPlcService _plc;
+        public PlcLampOffAction(IPlcService plc) => _plc = plc;
+        
+        public override Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
+        {
+            Console.WriteLine("Turning off lamp");
+            return Task.CompletedTask;
+        }
+    }
+
     public sealed class PlcSendPassAction : BaseAction
     {
         public override string Key => "Plc.SendPass";
