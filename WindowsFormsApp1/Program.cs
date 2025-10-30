@@ -28,11 +28,9 @@ namespace AutoInspectionPlatform
                 // 1. Build services once
                 var services = new ServiceCollection();
                 string connectionString = $"Data Source={GetDatabasePath()};Version=3;";
-                
-                Console.WriteLine("Registering application services...");
+
                 services.AddApplicationServices(connectionString); // Register our new services
                 
-                Console.WriteLine("Configuring PLC services...");
                 ConfigurePlcServices(services);        // PLC
 
                 var provider = services.BuildServiceProvider();
@@ -43,13 +41,19 @@ namespace AutoInspectionPlatform
                 var grpc = provider.GetRequiredService<IGrpcService>();
                 if (!grpc.StartAsync().Result) Console.WriteLine("gRPC not ready");
 
-                // 2. Jalankan DAG (fire-and-forget) → 1 baris
-                _ = provider.RunDagInBackground("inspectionflow.json",
-                                      maxDegree: 4,
-                                      CancellationToken.None);
+                var settingsService = provider.GetRequiredService<ISettingsService>();
+                var urlPath = settingsService.GetSetting<string>("workflow", "config_path");
+
+                if (File.Exists(urlPath))
+                {
+                    // 2. Jalankan DAG (fire-and-forget) → 1 baris
+                    _ = provider.RunDagInBackground(urlPath,
+                                          maxDegree: 4,
+                                          CancellationToken.None);
+                }
 
                 // 3. Start UI
-                Application.Run(new MainDashboard(provider));
+                Application.Run(new LoginForm(provider, connectionString));
             }
             catch (Exception ex)
             {
@@ -63,48 +67,28 @@ namespace AutoInspectionPlatform
 
         static void ConfigurePlcServices(IServiceCollection s)
         {
-            Console.WriteLine("Registering IPlcService...");
             s.AddSingleton<IPlcService, PlcOperation>();
-            Console.WriteLine("Registering PlcReadSubscription...");
             s.AddSingleton<PlcReadSubscription>((provider) => 
                 new PlcReadSubscription(provider.GetService<IPlcService>(), provider.GetRequiredService<IFlowContext>()));
         }
         
         static void ConfigurePlcAfterBuild(IServiceProvider provider)
         {
-            Console.WriteLine("Configuring PLC after build...");
             var plc = provider.GetService<IPlcService>() as PlcOperation;
             if (plc != null)
             {
-                Console.WriteLine("PLC service found, getting settings...");
                 var settings = provider.GetRequiredService<ISettingsService>();
                 var port = settings.GetSetting<string>("plc", "serial_port");
                 var baud = settings.GetSetting<int>("plc", "baud_rate");
                 
-                Console.WriteLine($"PLC settings - Port: {port}, Baud: {baud}");
                 if (!string.IsNullOrWhiteSpace(port) && baud > 0)
                 {
-                    Console.WriteLine("Setting PLC config...");
                     plc.SetConfig(port, baud);
-                    Console.WriteLine("Checking if PLC device exists...");
                     if (plc.DeviceExists()) 
                     {
-                        Console.WriteLine("Opening PLC connection...");
                         plc.Open();
                     }
-                    else
-                    {
-                        Console.WriteLine("PLC device does not exist, skipping open.");
-                    }
                 }
-                else
-                {
-                    Console.WriteLine("PLC settings are invalid, skipping configuration.");
-                }
-            }
-            else
-            {
-                Console.WriteLine("PLC service not found or not PlcOperation type.");
             }
         }
 

@@ -25,6 +25,7 @@ using WindowsFormsApp1.Core.Domain.Flow.Dag;
 using WindowsFormsApp1.Presentation.Flow;
 using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
 using WindowsFormsApp1.Core.Interfaces;
+using WindowsFormsApp1.Infrastructure.Di;
 
 namespace WindowsFormsApp1
 {
@@ -70,6 +71,8 @@ namespace WindowsFormsApp1
         private CancellationTokenSource _flowCts = new CancellationTokenSource();
         // Add field to track DAG execution task
         private Task _dagExecutionTask;
+        private readonly PlcDialog plcDialog = new PlcDialog();
+        private readonly ISettingsService _settingsService; // Made readonly
 
         public MainDashboard(IServiceProvider provider)
         {
@@ -80,6 +83,7 @@ namespace WindowsFormsApp1
             _cam = provider.GetRequiredService<CameraManager>(); // instance A
             _plc = provider.GetRequiredService<Core.Interfaces.IPlcService>(); // Initialize PLC service
             _grpc = provider.GetRequiredService<IGrpcService>(); // Initialize gRPC service from DI container
+            _settingsService = provider.GetRequiredService<ISettingsService>();
 
             _cam.Error += msg => MessageBox.Show(msg);
             _grabber.FramePreview += OnFramePreview;
@@ -451,7 +455,7 @@ namespace WindowsFormsApp1
         private TaskCompletionSource<bool> _dagReadyTcs = new TaskCompletionSource<bool>();
         
         // Add method to restart DAG execution
-        private async Task RestartDagExecutionAsync()
+        private async Task RestartDagExecutionAsync(string configWorkflowPath)
         {
             try
             {
@@ -467,7 +471,10 @@ namespace WindowsFormsApp1
                 oldTcs?.TrySetCanceled(); // Cancel any pending waits
                 
                 // Load DAG definition
-                var dag = DagFlowLoader.LoadJson("inspectionflow.json");
+                var dag = DagFlowLoader.LoadJson(configWorkflowPath);
+                
+                _provider.PopulateActionRegistry();
+
                 var registry = _provider.GetRequiredService<IActionRegistry>();
                 
                 // Create new executor
@@ -504,13 +511,33 @@ namespace WindowsFormsApp1
 
         // ------------- Buttons / Menu -------------
 
-        private void OpenCamera_Click(object sender, EventArgs e)
+        private async void OpenCamera_Click(object sender, EventArgs e)
         {
-            // Check if PLC is connected before allowing camera operations
-            if (_plc == null || !_plc.IsOpen)
+            string isUsedPlc = _settingsService.GetSetting<string>("plc", "is_used");
+            string configWorkflowPath = _settingsService.GetSetting<string>("workflow", "config_path");
+
+            if(string.IsNullOrEmpty(configWorkflowPath) || !File.Exists(configWorkflowPath))
             {
-                ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                ShowErrorMsg("Set workflow config path first", 0);
                 return;
+            }
+
+             //Check if PLC is connected before allowing camera operations
+            if (!string.IsNullOrEmpty(isUsedPlc))
+            {
+                if ((_plc == null || !_plc.IsOpen) && bool.Parse(isUsedPlc))
+                {
+                    ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                    return;
+                }
+            }
+            else
+            {
+                if (_plc == null || !_plc.IsOpen)
+                {
+                    ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                    return;
+                }
             }
 
             // Check if GRPC is connected before allowing camera operations
@@ -549,6 +576,9 @@ namespace WindowsFormsApp1
                 return;
             }
 
+            // Restart DAG execution when starting camera
+            await RestartDagExecutionAsync(configWorkflowPath);
+
             btn_Grab.Enabled = true;
 
             _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia
@@ -585,12 +615,6 @@ namespace WindowsFormsApp1
                 ShowErrorMsg("Start Grabbing Fail!", nRet);
             }
 
-            // Restart DAG execution when starting camera
-            await RestartDagExecutionAsync();
-
-            // Small delay to ensure DAG execution has started and is waiting for trigger
-            await Task.Delay(100);
-
             _ctx.Trigger = "CAMERA_STARTED";
             pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
             stopCameraBtn.Enabled = true;
@@ -598,8 +622,8 @@ namespace WindowsFormsApp1
 
         private void stopCamera_Click(object sender, EventArgs e)
         {
-            _grabbing = false;          // flag UI
-            _cam.Close();               // <-- TUTUP TOTAL
+            _grabbing = false;         
+            _cam.Close();              
 
             // Cancel DAG execution
             _flowCts?.Cancel();
@@ -1206,6 +1230,13 @@ namespace WindowsFormsApp1
             var form = new NodeEditorForm();
 
             form.Show();
+        }
+
+        private void workflowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var dialog = new WorkflowDialog(_provider);
+
+            dialog.Show();
         }
     }
 }

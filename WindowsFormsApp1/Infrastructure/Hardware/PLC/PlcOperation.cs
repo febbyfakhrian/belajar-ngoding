@@ -200,21 +200,22 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
         private void ParseChunk(string chunk)
         {
             if (string.IsNullOrEmpty(chunk)) return;
-            Console.WriteLine(chunk);
+            Debug.WriteLine($"[PLC] Received chunk: {chunk}");
 
             lock (_rxBuffer) _rxBuffer.Append(chunk);
 
             string buffered;
             lock (_rxBuffer) buffered = _rxBuffer.ToString();
+            Debug.WriteLine($"[PLC] Buffer content: {buffered}");
 
             int lineEnd;
             
-            // terima \r, \n, atau \r\n
+            // Process complete lines (terminated with \r, \n, or \r\n)
             while ((lineEnd = buffered.IndexOfAny(new[] { '\r', '\n' }, _lineStart)) >= 0)
             {
                 int len = lineEnd - _lineStart;
 
-                // lewati \r\n sebagai satu unit, selainnya 1 karakter
+                // Skip \r\n as a unit, otherwise skip 1 character
                 int skip = 1;
                 if (lineEnd + 1 < buffered.Length &&
                     buffered[lineEnd] == '\r' && buffered[lineEnd + 1] == '\n')
@@ -224,6 +225,8 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
 
                 string line = buffered.Substring(_lineStart, len).Trim();
                 _lineStart = lineEnd + skip;
+                
+                Debug.WriteLine($"[PLC] Processing complete line: {line}");
 
                 if (!string.IsNullOrWhiteSpace(line))
                 {
@@ -232,37 +235,49 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
                 }
             }
 
-            // ---------- 2.  sisa buffer tanpa delimiter → anggap 1 baris ----------
-            if (_lineStart < buffered.Length)
+            // ---------- 2.  compact buffer ----------
+            // Remove processed lines from buffer to prevent reprocessing
+            if (_lineStart > 0)
             {
-                string tail = buffered.Substring(_lineStart).Trim();
-                if (!string.IsNullOrWhiteSpace(tail))
-                {
-                    LineReceived?.Invoke(tail);
-                    _waitingResponse = false;
-                }
-                _lineStart = buffered.Length;   // tandai sudah habis
-            }
-
-            // ---------- 3.  kompak buffer kalau sudah terlalu panjang ----------
-            if (_lineStart > 4096)
-            {
+                // Check if there's any remaining unprocessed data
                 lock (_rxBuffer)
                 {
-                    _rxBuffer.Remove(0, _lineStart);
+                    if (_lineStart < _rxBuffer.Length)
+                    {
+                        string remaining = _rxBuffer.ToString(_lineStart, _rxBuffer.Length - _lineStart);
+                        if (!string.IsNullOrWhiteSpace(remaining))
+                        {
+                            Debug.WriteLine($"[PLC] Remaining unprocessed data: {remaining}");
+                        }
+                    }
+                }
+                
+                Debug.WriteLine($"[PLC] Compacting buffer, removing {_lineStart} characters");
+                lock (_rxBuffer)
+                {
+                    // Compact the buffer to remove processed data
+                    if (_lineStart < _rxBuffer.Length)
+                    {
+                        _rxBuffer.Remove(0, _lineStart);
+                    }
+                    else
+                    {
+                        _rxBuffer.Clear(); // All data has been processed
+                    }
                     _lineStart = 0;
                 }
             }
 
-            // Bersihkan buffer jika sudah terlalu panjang
-            //if (_lineStart > 1024)
-            //{
-            //    lock (_rxBuffer)
-            //    {
-            //        _rxBuffer.Remove(0, _lineStart);
-            //        _lineStart = 0;
-            //    }
-            //}
+            // ---------- 3.  buffer overflow protection ----------
+            lock (_rxBuffer)
+            {
+                if (_rxBuffer.Length > 8192)
+                {
+                    Debug.WriteLine($"[PLC] Warning: RX buffer size is {_rxBuffer.Length} characters, clearing...");
+                    _rxBuffer.Clear();
+                    _lineStart = 0;
+                }
+            }
         }
 
         public Task<bool> OpenAsync()

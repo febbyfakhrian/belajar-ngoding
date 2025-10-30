@@ -138,6 +138,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                     {
                         Debug.WriteLine($"[DAG] >>> ENTER {node.Id} (Name: {node.Name}, Type: {node.Type})");
 
+                        // Handle trigger nodes directly to avoid duplication with ExecuteNodeAsync
                         if (node.Type == "trigger")
                         {
                             var trigName = GetStringValue(node.Parameters,
@@ -145,13 +146,18 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                                           "UNKNOWN_TRIGGER");
                             Debug.WriteLine($"[DAG] Waiting for trigger: {trigName}");
                             await WaitTriggerAsync(trigName, node.Id, ct);
+                            Debug.WriteLine($"[DAG] Trigger {trigName} received for node {node.Id}");
                         }
-
-                        AutoMapContext(node);
-                        await ExecuteNodeAsync(node, ct);
+                        else
+                        {
+                            // AutoMap and execute the node for non-trigger nodes
+                            AutoMapContext(node);
+                            await ExecuteNodeAsync(node, ct);
+                        }
 
                         Debug.WriteLine($"[DAG] <<< EXIT  {node.Id}");
                         done[node.Id] = true;
+                        Debug.WriteLine($"[DAG] Node {node.Id} marked as done. Total completed: {done.Count}/{def.Nodes.Count}");
 
                         /*  3.  decrement ren  */
                         if (_children.TryGetValue(node.Id, out var edges))
@@ -173,7 +179,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                 // Determine which path to take based on current batch count
                                 // For batchSize=4, we want to execute 4 times, then take "done" path
                                 // So we take "main" path when CurrentBatch < BatchSize
-                                string requiredKey = (state.CurrentBatch >= state.BatchSize) ? "done" : "main";
+                                string requiredKey = (state.CurrentBatch > state.BatchSize) ? "done" : "main";
                                 
                                 // Filter edges to only include those with the required key
                                 filteredEdges = edges.Where(e => e.Key == requiredKey).ToList();
@@ -301,10 +307,12 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                         }
                     case "trigger":
                         {
+                            // Trigger nodes are handled directly in RunNode to avoid duplication
+                            // This case should never be reached, but included for completeness
                             var name = GetStringValue(node.Parameters,
                                                       "triggerName",
                                                       "UNKNOWN_TRIGGER");
-                            Debug.WriteLine($"[DAG] Processing trigger node with name: {name}");
+                            Debug.WriteLine($"[DAG] Processing trigger node with name: {name} (should not happen)");
                             await WaitTriggerAsync(name, node.Id, ct);
                             break;
                         }
@@ -382,32 +390,43 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                             string waitingNodeId,
                                             CancellationToken ct)
         {
-            // fast path
-            if (string.Equals(_ctx.Trigger, triggerName,
-                              StringComparison.OrdinalIgnoreCase))
+            // fast path - check if trigger is already set
+            lock (_ctx)
             {
-                return;
-            }
-
-            Debug.WriteLine($"[DAG] Waiting for trigger '{triggerName}'...");
-            while (!string.Equals(_ctx.Trigger, triggerName,
-                                  StringComparison.OrdinalIgnoreCase))
-            {
-                await Task.Delay(50, ct);
-                ct.ThrowIfCancellationRequested();
-            }
-            Debug.WriteLine($"[DAG] Trigger '{triggerName}' received");
-
-            /*  no loop-awareness → always consume trigger  */
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(50);
                 if (string.Equals(_ctx.Trigger, triggerName,
                                   StringComparison.OrdinalIgnoreCase))
                 {
-                    _ctx.Trigger = null;
+                    Debug.WriteLine($"[DAG] Fast path: Trigger '{triggerName}' already set for node {waitingNodeId}");
+                    _ctx.Trigger = null; // Consume the trigger immediately
+                    return;
                 }
-            });
+            }
+
+            Debug.WriteLine($"[DAG] Node {waitingNodeId} waiting for trigger '{triggerName}'...");
+            
+            while (true)
+            {
+                // Check if this node should consume the trigger
+                bool shouldConsume = false;
+                lock (_ctx)
+                {
+                    if (string.Equals(_ctx.Trigger, triggerName,
+                                      StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"[DAG] Trigger '{triggerName}' received by node {waitingNodeId}");
+                        shouldConsume = true;
+                        _ctx.Trigger = null; // Consume the trigger immediately
+                    }
+                }
+                
+                if (shouldConsume)
+                {
+                    return; // Trigger consumed, exit
+                }
+                
+                await Task.Delay(50, ct);
+                ct.ThrowIfCancellationRequested();
+            }
         }
 
         private void AutoMapContext(DagNode node)
@@ -430,8 +449,10 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
         {
             try
             {
+                Debug.WriteLine($"[DAG] Evaluating condition: {expr}");
                 // Use the existing Evaluate function if available, otherwise use DefaultEval
-                return Evaluate != null ? Evaluate(expr, _ctx) : DefaultEval(expr, _ctx);
+                bool result = Evaluate != null ? Evaluate(expr, _ctx) : DefaultEval(expr, _ctx);
+                return result;
             }
             catch (Exception ex)
             {
@@ -471,10 +492,20 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
             switch (expr)
             {
                 case "Context.FinalLabel == true":
-                    return ctx.FinalLabel == true;
+                    // Handle nullable boolean properly - default to false if null
+                    Debug.WriteLine($"[DAG] Evaluating 'Context.FinalLabel == true' (backward compatibility) - FinalLabel value: {ctx.FinalLabel?.ToString() ?? "null"}");
+                    // Use the same logic as the general equality expression parser for consistency
+                    bool resultTrue = (ctx.FinalLabel ?? false) == true;
+                    Debug.WriteLine($"[DAG] Result for 'Context.FinalLabel == true': {resultTrue}");
+                    return resultTrue;
 
                 case "Context.FinalLabel == false":
-                    return ctx.FinalLabel == false;
+                    // Handle nullable boolean properly - only true when explicitly false
+                    Debug.WriteLine($"[DAG] Evaluating 'Context.FinalLabel == false' (backward compatibility) - FinalLabel value: {ctx.FinalLabel?.ToString() ?? "null"}");
+                    // Use the same logic as the general equality expression parser for consistency
+                    bool resultFalse = (ctx.FinalLabel ?? false) == false;
+                    Debug.WriteLine($"[DAG] Result for 'Context.FinalLabel == false': {resultFalse}");
+                    return resultFalse;
 
                 default:
                     // Handle Context.Conditions expressions
@@ -522,6 +553,15 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
         
         private static bool EvaluateExpressionPart(string expr, IFlowContext ctx)
         {
+            // Handle Context.FinalLabel expressions
+            if (expr == "Context.FinalLabel")
+            {
+                // Return the value of FinalLabel, defaulting to false if null
+                bool finalLabelValue = ctx.FinalLabel ?? false;
+                Debug.WriteLine($"[DAG] Context.FinalLabel expression evaluated to: {finalLabelValue} (actual FinalLabel: {ctx.FinalLabel?.ToString() ?? "null"})");
+                return finalLabelValue;
+            }
+            
             // Handle Context.Conditions expressions
             if (expr.StartsWith("Context.Conditions."))
             {

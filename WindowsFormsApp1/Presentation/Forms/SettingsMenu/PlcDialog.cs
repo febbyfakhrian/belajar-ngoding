@@ -330,5 +330,86 @@ namespace WindowsFormsApp1
             // Fallback to static instance for backward compatibility
             return null;
         }
+
+        private void saveBtn_Click(object sender, EventArgs e)
+        {
+            // Access the Checked property value of the disablePLCradioButton control
+            // and implement conditional logic based on this value
+            if (disablePlcRadioButton.Checked)
+            {
+                // PLC functionality should be disabled
+                HandlePlcDisabledState();
+            }
+            else
+            {
+                // PLC functionality should be enabled
+                HandlePlcEnabledState();
+            }
+        }
+
+        /// <summary>
+        /// Handles the logic when PLC functionality is disabled
+        /// </summary>
+        private void HandlePlcDisabledState()
+        {
+            try
+            {
+                // Show message to user
+                MessageBox.Show("PLC functionality has been disabled.", "PLC Status", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                // Get the PLC service and close any open connections
+                var plcService = GetPlcService();
+                if (plcService != null && plcService.IsOpen)
+                {
+                    // Close the PLC connection asynchronously
+                    plcService.CloseAsync().Wait(); // Blocking call for simplicity in this context
+                    Console.WriteLine("[PLC] Connection closed due to disabled state");
+                }
+                
+                // Update UI to reflect disabled state
+                connectBtn.Enabled = false;
+                sendCommandBtn.Enabled = false;
+                button1.Enabled = false;
+                comboBoxDevices.Enabled = false;
+                
+                // Log the state change
+                Console.WriteLine("[PLC] PLC functionality disabled by user");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error while disabling PLC: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"[PLC] Error disabling PLC: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles the logic when PLC functionality is enabled
+        /// </summary>
+        private void HandlePlcEnabledState()
+        {
+            try
+            {
+                // Show message to user
+                MessageBox.Show("PLC functionality has been enabled.", "PLC Status", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                // Update UI to reflect enabled state
+                connectBtn.Enabled = true;
+                sendCommandBtn.Enabled = true;
+                button1.Enabled = true;
+                comboBoxDevices.Enabled = true;
+                
+                // Log the state change
+                Console.WriteLine("[PLC] PLC functionality enabled by user");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error while enabling PLC: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"[PLC] Error enabling PLC: {ex.Message}");
+            }
+        }
     }
 }

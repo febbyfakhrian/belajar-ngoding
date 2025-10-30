@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,29 +21,16 @@ namespace WindowsFormsApp1.Infrastructure.Services.Services
         {
             try
             {
-                Console.WriteLine($"Loading DAG from {jsonFile}...");
                 var dag = DagFlowLoader.LoadJson(jsonFile);
-                Console.WriteLine("DAG loaded successfully.");
 
-                Console.WriteLine("Populating action registry...");
                 provider.PopulateActionRegistry();
-                Console.WriteLine("Action registry populated.");
-
-                Console.WriteLine("Getting action registry...");
                 var registry = provider.GetRequiredService<IActionRegistry>();
-                Console.WriteLine("Action registry obtained.");
-
-                Console.WriteLine("Getting flow context...");
+                
                 var context = provider.GetRequiredService<IFlowContext>();
-                Console.WriteLine("Flow context obtained.");
 
-                Console.WriteLine("Creating DAG executor...");
                 var executor = new DagExecutor(registry, context);
-                Console.WriteLine("DAG executor created.");
 
-                Console.WriteLine("Running DAG executor...");
                 await executor.RunAsync(dag, ct, maxDegree);
-                Console.WriteLine("DAG executor completed.");
             }
             catch (Exception ex)
             {

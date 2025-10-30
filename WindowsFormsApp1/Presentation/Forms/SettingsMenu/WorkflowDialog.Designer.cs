@@ -1,6 +1,6 @@
 ﻿namespace WindowsFormsApp1
 {
-    partial class DatabaseDialog
+    partial class WorkflowDialog
     {
         /// <summary>
         /// Required designer variable.
@@ -125,9 +125,9 @@
             this.bigLabel1.ForeColor = System.Drawing.Color.White;
             this.bigLabel1.Location = new System.Drawing.Point(3, 0);
             this.bigLabel1.Name = "bigLabel1";
-            this.bigLabel1.Size = new System.Drawing.Size(184, 23);
+            this.bigLabel1.Size = new System.Drawing.Size(207, 23);
             this.bigLabel1.TabIndex = 0;
-            this.bigLabel1.Text = "Setting Database Dialog";
+            this.bigLabel1.Text = "Setting Workflow Dialog";
             // 
             // materialDivider1
             // 
@@ -203,7 +203,7 @@
             this.dungeonLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.dungeonLabel1.Click += new System.EventHandler(this.dungeonLabel1_Click);
             // 
-            // DatabaseDialog
+            // WorkflowDialog
             // 
             this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -218,7 +218,7 @@
             this.MaximumSize = new System.Drawing.Size(739, 173);
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(700, 160);
-            this.Name = "DatabaseDialog";
+            this.Name = "WorkflowDialog";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;

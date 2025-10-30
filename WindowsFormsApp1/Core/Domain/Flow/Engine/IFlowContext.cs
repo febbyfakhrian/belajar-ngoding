@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,7 +24,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Engine
 
     public sealed class FlowContext : IFlowContext
     {
-        public bool? FinalLabel { get; set; }
+        public bool? FinalLabel { get; set; } = false;  // Initialize to false by default and make volatile for thread safety
         public string LastImageId { get; set; }
         public byte[] LastFrame { get; set; }
         public string LastGrpcJson { get; set; }

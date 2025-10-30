@@ -11,7 +11,6 @@ namespace WindowsFormsApp1.Infrastructure.Di
     {
         public static void AddHardwareServices(this IServiceCollection services)
         {
-            Debug.WriteLine("Registering hardware services...");
             // Hardware services
             // Register CameraManager directly with its required dependency
             services.AddSingleton<CameraManager>(provider => 
@@ -20,7 +19,6 @@ namespace WindowsFormsApp1.Infrastructure.Di
             // IPlcService registration moved to Program.cs to handle configuration properly
             services.AddSingleton<IGrpcService>(provider => 
                 new Infrastructure.Hardware.Grpc.GrpcService(provider.GetService<ISettingsService>())); // Provide settings service to GrpcService
-            Debug.WriteLine("Hardware services registered.");
         }
     }
 }

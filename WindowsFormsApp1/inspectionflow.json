@@ -30,7 +30,7 @@
             "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c1",
             "name": "Loop Start",
             "type": "split-batches",
-            "parameters": { "batchSize": 3 }
+            "parameters": { "batchSize": 5 }
         },
         {
             "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6d2",

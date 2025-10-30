@@ -55,6 +55,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
+                LogInfo(ctx.FinalLabel.ToString());
                 LogInfo("Sending PASS command");
                 if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.PASS);
                 LogInfo("PASS command sent");
@@ -77,6 +78,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
+                LogInfo(ctx.FinalLabel.ToString());
                 LogInfo("Sending FAIL command");
                 if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.FAIL);
                 LogInfo("FAIL command sent");

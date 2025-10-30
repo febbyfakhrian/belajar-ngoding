@@ -27,7 +27,8 @@ namespace WindowsFormsApp1.Core.Domain.Actions
                 ctx.LastGrpcJson = resp.Result;
 
                 var root = JsonConvert.DeserializeObject<Root>(ctx.LastGrpcJson);
-                ctx.FinalLabel = root?.FinalLabel;
+                // Ensure FinalLabel is never null by providing a default value
+                ctx.FinalLabel = root?.FinalLabel ?? false;  // Default to false if root is null
                 LogInfo($"FinalLabel = {ctx.FinalLabel}");
 
                 // ➜ panggil render (non-blocking)

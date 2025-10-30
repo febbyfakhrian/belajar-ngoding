@@ -481,6 +481,12 @@
     <Compile Include="Presentation\Forms\SettingsMenu\CameraDialog.Designer.cs">
       <DependentUpon>CameraDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\WorkflowDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\SettingsMenu\WorkflowDialog.Designer.cs">
+      <DependentUpon>WorkflowDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Presentation\Forms\SettingsMenu\DatabaseDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -549,6 +555,9 @@
     <EmbeddedResource Include="Presentation\Forms\SettingsMenu\CameraDialog.resx">
       <DependentUpon>CameraDialog.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\SettingsMenu\WorkflowDialog.resx">
+      <DependentUpon>WorkflowDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\SettingsMenu\DatabaseDialog.resx">
       <DependentUpon>DatabaseDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -584,9 +593,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="inspectionflow.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="looping-flow.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
