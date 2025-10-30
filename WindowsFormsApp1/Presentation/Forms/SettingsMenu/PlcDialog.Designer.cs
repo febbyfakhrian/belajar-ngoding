@@ -41,6 +41,7 @@
             this.flowMain = new System.Windows.Forms.FlowLayoutPanel();
             this.enablePlcRadioButton = new ReaLTaiizor.Controls.AirRadioButton();
             this.disablePlcRadioButton = new ReaLTaiizor.Controls.AirRadioButton();
+            this.button2 = new ReaLTaiizor.Controls.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -110,7 +111,7 @@
             this.inputCommandPlc.Font = new System.Drawing.Font("Tahoma", 11F);
             this.inputCommandPlc.ForeColor = System.Drawing.Color.DimGray;
             this.inputCommandPlc.Image = null;
-            this.inputCommandPlc.Location = new System.Drawing.Point(12, 84);
+            this.inputCommandPlc.Location = new System.Drawing.Point(11, 114);
             this.inputCommandPlc.MaxLength = 32767;
             this.inputCommandPlc.Multiline = false;
             this.inputCommandPlc.Name = "inputCommandPlc";
@@ -139,7 +140,7 @@
             this.sendCommandBtn.Image = null;
             this.sendCommandBtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.sendCommandBtn.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.sendCommandBtn.Location = new System.Drawing.Point(238, 85);
+            this.sendCommandBtn.Location = new System.Drawing.Point(249, 114);
             this.sendCommandBtn.Name = "sendCommandBtn";
             this.sendCommandBtn.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.sendCommandBtn.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -186,16 +187,16 @@
             // 
             // enablePlcRadioButton
             // 
-            this.enablePlcRadioButton.Checked = false;
+            this.enablePlcRadioButton.Checked = true;
             this.enablePlcRadioButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.enablePlcRadioButton.Customization = "PDw8/+3t7f/m5ub/p6en/2RkZP8=";
+            this.enablePlcRadioButton.Customization = "AAAA/+3t7f/m5ub/p6en/2RkZP8=";
             this.enablePlcRadioButton.Field = 16;
             this.enablePlcRadioButton.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.enablePlcRadioButton.Image = null;
             this.enablePlcRadioButton.Location = new System.Drawing.Point(14, 52);
             this.enablePlcRadioButton.Name = "enablePlcRadioButton";
             this.enablePlcRadioButton.NoRounding = false;
-            this.enablePlcRadioButton.Size = new System.Drawing.Size(69, 17);
+            this.enablePlcRadioButton.Size = new System.Drawing.Size(69, 16);
             this.enablePlcRadioButton.TabIndex = 27;
             this.enablePlcRadioButton.Text = "Enabled";
             this.enablePlcRadioButton.Transparent = false;
@@ -204,7 +205,7 @@
             // 
             this.disablePlcRadioButton.Checked = false;
             this.disablePlcRadioButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.disablePlcRadioButton.Customization = "PDw8/+3t7f/m5ub/p6en/2RkZP8=";
+            this.disablePlcRadioButton.Customization = "AAAA/+3t7f/m5ub/p6en/2RkZP8=";
             this.disablePlcRadioButton.Field = 16;
             this.disablePlcRadioButton.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.disablePlcRadioButton.Image = null;
@@ -216,11 +217,32 @@
             this.disablePlcRadioButton.Text = "Disable";
             this.disablePlcRadioButton.Transparent = false;
             // 
+            // button2
+            // 
+            this.button2.BackColor = System.Drawing.Color.Transparent;
+            this.button2.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.button2.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.button2.EnteredBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.button2.EnteredColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button2.Image = null;
+            this.button2.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.button2.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
+            this.button2.Location = new System.Drawing.Point(262, 52);
+            this.button2.Name = "button2";
+            this.button2.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.button2.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
+            this.button2.Size = new System.Drawing.Size(108, 28);
+            this.button2.TabIndex = 29;
+            this.button2.Text = "Save";
+            this.button2.TextAlignment = System.Drawing.StringAlignment.Center;
+            // 
             // PlcDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(816, 433);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.disablePlcRadioButton);
             this.Controls.Add(this.enablePlcRadioButton);
             this.Controls.Add(this.button1);
@@ -260,5 +282,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowMain;
         private ReaLTaiizor.Controls.AirRadioButton enablePlcRadioButton;
         private ReaLTaiizor.Controls.AirRadioButton disablePlcRadioButton;
+        private ReaLTaiizor.Controls.Button button2;
     }
 }

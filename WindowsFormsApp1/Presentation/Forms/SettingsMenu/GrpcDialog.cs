@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using WindowsFormsApp1.Core.Interfaces;
 using System.Diagnostics; // Added for logging
+using System.IO;
 
 namespace WindowsFormsApp1
 {
@@ -151,12 +152,14 @@ namespace WindowsFormsApp1
                 if (isConnected)
                 {
                     saveBtn.Enabled = true;
+                    updateConfigBtn.Enabled = true;
                     MessageBox.Show($"Successfully connected to GRPC server at {grpcUrl}", "Connection Success", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     saveBtn.Enabled = false;
+                    updateConfigBtn.Enabled = false;
                     MessageBox.Show($"Failed to connect to GRPC server at {grpcUrl}", "Connection Failed", 
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -283,6 +286,54 @@ namespace WindowsFormsApp1
             // Log the error for debugging purposes
             Debug.WriteLine(message);
             Console.WriteLine(message);
+        }
+
+        private async void updateConfigBtn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.Title = "Pilih File Konfigurasi";
+                    openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                    if (openFileDialog.ShowDialog(this) != DialogResult.OK)
+                        return; // User batal pilih file
+
+                    string path = openFileDialog.FileName;
+
+                    if (!File.Exists(path))
+                    {
+                        MessageBox.Show(this,
+                            $"File tidak ditemukan: {path}",
+                            "Update Config",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Kirim file ke gRPC
+                    var resp = await _grpcService.UpdateConfigAsync(path);
+
+                    Console.WriteLine($"Status : {resp.Status}");
+                    Console.WriteLine($"Message: {resp.Message}");
+
+                    // Tampilkan hasil
+                    MessageBox.Show(this,
+                        $"Config update finished.\r\nStatus : {resp.Status}\r\nMessage: {resp.Message}",
+                        "Update Config",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this,
+                    $"Gagal update config:\r\n{ex.Message}",
+                    "Update Config",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
     }
 }

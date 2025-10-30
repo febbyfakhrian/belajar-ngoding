@@ -36,6 +36,7 @@
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.testConnectionBtn = new ReaLTaiizor.Controls.ForeverButton();
             this.saveBtn = new ReaLTaiizor.Controls.ForeverButton();
+            this.updateConfigBtn = new ReaLTaiizor.Controls.ForeverButton();
             this.urlHostGrpcTextBox = new ReaLTaiizor.Controls.BigTextBox();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -85,11 +86,11 @@
             this.bigLabel1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.bigLabel1.AutoSize = true;
             this.bigLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.bigLabel1.Font = new System.Drawing.Font("Arial Rounded MT Bold", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.bigLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.bigLabel1.ForeColor = System.Drawing.Color.White;
-            this.bigLabel1.Location = new System.Drawing.Point(3, 3);
+            this.bigLabel1.Location = new System.Drawing.Point(3, 2);
             this.bigLabel1.Name = "bigLabel1";
-            this.bigLabel1.Size = new System.Drawing.Size(66, 22);
+            this.bigLabel1.Size = new System.Drawing.Size(62, 24);
             this.bigLabel1.TabIndex = 0;
             this.bigLabel1.Text = "GRPC";
             // 
@@ -120,6 +121,7 @@
             // 
             this.flowLayoutPanel1.Controls.Add(this.testConnectionBtn);
             this.flowLayoutPanel1.Controls.Add(this.saveBtn);
+            this.flowLayoutPanel1.Controls.Add(this.updateConfigBtn);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 123);
@@ -133,7 +135,7 @@
             this.testConnectionBtn.BackColor = System.Drawing.Color.Transparent;
             this.testConnectionBtn.BaseColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(32)))), ((int)(((byte)(46)))));
             this.testConnectionBtn.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.testConnectionBtn.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.testConnectionBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.testConnectionBtn.Location = new System.Drawing.Point(518, 3);
             this.testConnectionBtn.Name = "testConnectionBtn";
             this.testConnectionBtn.Rounded = true;
@@ -150,7 +152,7 @@
             this.saveBtn.BaseColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(32)))), ((int)(((byte)(46)))));
             this.saveBtn.Cursor = System.Windows.Forms.Cursors.Hand;
             this.saveBtn.Enabled = false;
-            this.saveBtn.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.saveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.saveBtn.Location = new System.Drawing.Point(433, 3);
             this.saveBtn.Name = "saveBtn";
             this.saveBtn.Rounded = true;
@@ -159,6 +161,23 @@
             this.saveBtn.Text = "Save";
             this.saveBtn.TextColor = System.Drawing.Color.White;
             this.saveBtn.Click += new System.EventHandler(this.saveBtn_Click);
+            // 
+            // updateConfigBtn
+            // 
+            this.updateConfigBtn.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.updateConfigBtn.BackColor = System.Drawing.Color.Transparent;
+            this.updateConfigBtn.BaseColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(32)))), ((int)(((byte)(46)))));
+            this.updateConfigBtn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.updateConfigBtn.Enabled = false;
+            this.updateConfigBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.updateConfigBtn.Location = new System.Drawing.Point(304, 3);
+            this.updateConfigBtn.Name = "updateConfigBtn";
+            this.updateConfigBtn.Rounded = true;
+            this.updateConfigBtn.Size = new System.Drawing.Size(123, 38);
+            this.updateConfigBtn.TabIndex = 8;
+            this.updateConfigBtn.Text = "Update Config";
+            this.updateConfigBtn.TextColor = System.Drawing.Color.White;
+            this.updateConfigBtn.Click += new System.EventHandler(this.updateConfigBtn_Click);
             // 
             // urlHostGrpcTextBox
             // 
@@ -209,5 +228,6 @@
         private ReaLTaiizor.Controls.ForeverButton testConnectionBtn;
         private ReaLTaiizor.Controls.ForeverButton saveBtn;
         private ReaLTaiizor.Controls.BigTextBox urlHostGrpcTextBox;
+        private ReaLTaiizor.Controls.ForeverButton updateConfigBtn;
     }
 }

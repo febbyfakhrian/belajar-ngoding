@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 using WindowsFormsApp1.Core.Entities.Models;
 using WindowsFormsApp1.Core.Interfaces;
 using WindowsFormsApp1.Infrastructure.Services;
@@ -206,27 +207,45 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
             string buffered;
             lock (_rxBuffer) buffered = _rxBuffer.ToString();
 
-            // Cari line separator - now looking for \r to match PLC commands
-            int lineEnd = buffered.IndexOf('\r', _lineStart);
-            while (lineEnd >= 0)
+            int lineEnd;
+            
+            // terima \r, \n, atau \r\n
+            while ((lineEnd = buffered.IndexOfAny(new[] { '\r', '\n' }, _lineStart)) >= 0)
             {
-                // Ekstrak line penuh
-                string line = buffered.Substring(_lineStart, lineEnd - _lineStart).Trim('\r', '\n');
-                _lineStart = lineEnd + 1;
+                int len = lineEnd - _lineStart;
 
-                // Proses line
+                // lewati \r\n sebagai satu unit, selainnya 1 karakter
+                int skip = 1;
+                if (lineEnd + 1 < buffered.Length &&
+                    buffered[lineEnd] == '\r' && buffered[lineEnd + 1] == '\n')
+                {
+                    skip = 2;
+                }
+
+                string line = buffered.Substring(_lineStart, len).Trim();
+                _lineStart = lineEnd + skip;
+
                 if (!string.IsNullOrWhiteSpace(line))
                 {
                     LineReceived?.Invoke(line);
                     _waitingResponse = false;
                 }
-
-                // Cari line separator berikutnya
-                lineEnd = buffered.IndexOf('\r', _lineStart);
             }
 
-            // Bersihkan buffer jika sudah terlalu panjang
-            if (_lineStart > 1024)
+            // ---------- 2.  sisa buffer tanpa delimiter → anggap 1 baris ----------
+            if (_lineStart < buffered.Length)
+            {
+                string tail = buffered.Substring(_lineStart).Trim();
+                if (!string.IsNullOrWhiteSpace(tail))
+                {
+                    LineReceived?.Invoke(tail);
+                    _waitingResponse = false;
+                }
+                _lineStart = buffered.Length;   // tandai sudah habis
+            }
+
+            // ---------- 3.  kompak buffer kalau sudah terlalu panjang ----------
+            if (_lineStart > 4096)
             {
                 lock (_rxBuffer)
                 {
@@ -234,6 +253,16 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
                     _lineStart = 0;
                 }
             }
+
+            // Bersihkan buffer jika sudah terlalu panjang
+            //if (_lineStart > 1024)
+            //{
+            //    lock (_rxBuffer)
+            //    {
+            //        _rxBuffer.Remove(0, _lineStart);
+            //        _lineStart = 0;
+            //    }
+            //}
         }
 
         public Task<bool> OpenAsync()

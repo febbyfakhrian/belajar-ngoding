@@ -167,10 +167,6 @@ namespace WindowsFormsApp1.Core.Domain.Actions
                 return;
             }
 
-            // 1.  ASK the PLC to start sending READ lines
-            _plc.SendCommandAsync(_readBytes);
-
-            // 2.  now listen for the answers
             _attachedHandler = async lineRaw => await HandleLineAsync(lineRaw);
             _plc.LineReceived += _attachedHandler;
         }
@@ -191,7 +187,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
                 // Instead of comparing the command with response, check if the line contains
                 // the expected response pattern or is a valid PLC response
                 string lineClean = lineRaw.TrimEnd('\r', '\n');
-                
+
                 // Check if this is a response to our READ command
                 // The PLC should respond with something like "%01$RC..." for read commands
                 if (lineClean.StartsWith("%01$RC") || lineClean.StartsWith("%01#RCSR"))
@@ -199,8 +195,9 @@ namespace WindowsFormsApp1.Core.Domain.Actions
                     _ctx.Trigger = "PLC_READ_RECEIVED";
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[PLC] Error handling line: {ex.Message}");
                 // swallow – avoid breaking the subscription loop on sporadic parse errors
             }
 

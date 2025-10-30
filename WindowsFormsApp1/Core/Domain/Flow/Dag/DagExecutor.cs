@@ -162,25 +162,41 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                             // Special handling for split-batches nodes
                             if (node.Type == "split-batches")
                             {
-                                // Increment the batch counter when the node is executed
-                                if (_activeSplitBatches.TryGetValue(node.Id, out var state))
+                                // Get or create the state for this split-batches node
+                                // Only initialize if it doesn't exist yet
+                                int batchSize = GetIntValue(node.Parameters, "batchSize", 1);
+                                var state = _activeSplitBatches.GetOrAdd(node.Id, id => new SplitBatchState { BatchSize = batchSize, CurrentBatch = 0 });
+                                
+                                // Increment the batch counter
+                                state.CurrentBatch++;
+                                
+                                // Determine which path to take based on current batch count
+                                // For batchSize=4, we want to execute 4 times, then take "done" path
+                                // So we take "main" path when CurrentBatch < BatchSize
+                                string requiredKey = (state.CurrentBatch >= state.BatchSize) ? "done" : "main";
+                                
+                                // Filter edges to only include those with the required key
+                                filteredEdges = edges.Where(e => e.Key == requiredKey).ToList();
+                                
+                                Debug.WriteLine($"[DAG] Split-batches node {node.Id} taking '{requiredKey}' path (batch {state.CurrentBatch}/{state.BatchSize})");
+                            }
+                            
+                            // Evaluate conditional expressions on edges
+                            var executableEdges = new List<DagEdge>();
+                            foreach (var edge in filteredEdges)
+                            {
+                                // If there's no condition, or if the condition evaluates to true, add the edge
+                                if (string.IsNullOrEmpty(edge.When) || EvaluateCondition(edge.When))
                                 {
-                                    // Increment the batch counter
-                                    state.CurrentBatch++;
-                                    
-                                    // Determine which path to take based on current batch count
-                                    // For batchSize=4, we want to execute 4 times, then take "done" path on the 5th
-                                    // So we take "main" path when CurrentBatch < BatchSize
-                                    string requiredKey = (state.CurrentBatch >= state.BatchSize) ? "done" : "main";
-                                    
-                                    // Filter edges to only include those with the required key
-                                    filteredEdges = edges.Where(e => e.Key == requiredKey).ToList();
-                                    
-                                    Debug.WriteLine($"[DAG] Split-batches node {node.Id} taking '{requiredKey}' path (batch {state.CurrentBatch}/{state.BatchSize})");
+                                    executableEdges.Add(edge);
+                                }
+                                else
+                                {
+                                    Debug.WriteLine($"[DAG] Skipping edge from {node.Id} to {edge.To} because condition '{edge.When}' evaluated to false");
                                 }
                             }
                             
-                            foreach (var edge in filteredEdges)
+                            foreach (var edge in executableEdges)
                             {
                                 string childId = edge.To;
                                 Debug.WriteLine($"[DAG] Enqueuing child node: {childId} via '{edge.Key}' path");
@@ -239,6 +255,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                                      "actionKey",
                                                      "UnknownAction");
                             Debug.WriteLine($"[DAG] Executing action with key: {key}");
+
                             if (!_registry.TryGet(key, out var act))
                             {
                                 Debug.WriteLine($"[DAG] ERROR: Action {key} not registered");
@@ -251,9 +268,9 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
 
                             await act.ExecuteAsync(_ctx, ct);
                             
-                            // Simpan status sukses
+                                // Simpan status sukses
                             _ctx.Vars[$"node_{node.Id}_executed"] = true;
-                            _ctx.Vars[$"node_{node.Id}_success"] = false;
+                            _ctx.Vars[$"node_{node.Id}_success"] = true;
 
                             /*  no loop-awareness → always reset trigger  */
                             _ctx.Trigger = null;
@@ -301,15 +318,7 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                     case "split-batches":
                         {
                             // Handle split-batches node type
-                            int batchSize = GetIntValue(node.Parameters, "batchSize", 1);
-                            
-                            // Get or create the state for this split-batches node
-                            // Initialize with CurrentBatch = 0 so the first execution increments it to 1
-                            var state = _activeSplitBatches.GetOrAdd(node.Id, new SplitBatchState { BatchSize = batchSize, CurrentBatch = 0 });
-                            
-                            // Log the current state
-                            Debug.WriteLine($"[DAG] Split-batches node {node.Id} has batch counter at {state.CurrentBatch} of {state.BatchSize}");
-                            
+                            // State is now managed in the RunNode method
                             break;
                         }
                     default:
@@ -417,8 +426,48 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
             }
         }
 
+        private bool EvaluateCondition(string expr)
+        {
+            try
+            {
+                // Use the existing Evaluate function if available, otherwise use DefaultEval
+                return Evaluate != null ? Evaluate(expr, _ctx) : DefaultEval(expr, _ctx);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DAG] Error evaluating condition '{expr}': {ex.Message}");
+                return false; // Default to false if evaluation fails
+            }
+        }
+
         private static bool DefaultEval(string expr, IFlowContext ctx)
         {
+            // Handle equality expressions
+            if (expr.Contains(" == "))
+            {
+                var parts = expr.Split(new string[] { " == " }, StringSplitOptions.None);
+                if (parts.Length == 2)
+                {
+                    var left = parts[0].Trim();
+                    var right = parts[1].Trim();
+                    
+                    // Evaluate left side
+                    bool leftValue = EvaluateExpressionPart(left, ctx);
+                    
+                    // Evaluate right side
+                    bool rightValue = false;
+                    if (right == "true")
+                        rightValue = true;
+                    else if (right == "false")
+                        rightValue = false;
+                    else
+                        rightValue = EvaluateExpressionPart(right, ctx);
+                    
+                    return leftValue == rightValue;
+                }
+            }
+            
+            // Handle simple expressions (backward compatibility)
             switch (expr)
             {
                 case "Context.FinalLabel == true":
@@ -428,10 +477,97 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                     return ctx.FinalLabel == false;
 
                 default:
-                    if (expr.StartsWith("Context.Conditions"))
-                        return (bool)ResolveExpression(expr);
+                    // Handle Context.Conditions expressions
+                    if (expr.StartsWith("Context.Conditions."))
+                    {
+                        // Extract condition name (e.g., "Context.Conditions.loopSuccess" -> "loopSuccess")
+                        var conditionName = expr.Substring("Context.Conditions.".Length);
+                        
+                        // Check if the condition exists and return its value
+                        if (ctx.Conditions.TryGetValue(conditionName, out bool value))
+                        {
+                            return value;
+                        }
+                        return false;
+                    }
+                    
+                    // Handle Context.Vars expressions
+                    if (expr.StartsWith("Context.Vars."))
+                    {
+                        // Extract variable name (e.g., "Context.Vars.node_123_success" -> "node_123_success")
+                        var varName = expr.Substring("Context.Vars.".Length);
+                        
+                        // Check if the variable exists and return its value
+                        if (ctx.Vars.TryGetValue(varName, out object value))
+                        {
+                            if (value is bool boolValue)
+                            {
+                                return boolValue;
+                            }
+                            else if (value is string stringValue)
+                            {
+                                return bool.TryParse(stringValue, out bool result) ? result : false;
+                            }
+                            else
+                            {
+                                return Convert.ToBoolean(value);
+                            }
+                        }
+                        return false;
+                    }
+                    
                     return false;
             }
+        }
+        
+        private static bool EvaluateExpressionPart(string expr, IFlowContext ctx)
+        {
+            // Handle Context.Conditions expressions
+            if (expr.StartsWith("Context.Conditions."))
+            {
+                // Extract condition name (e.g., "Context.Conditions.loopSuccess" -> "loopSuccess")
+                var conditionName = expr.Substring("Context.Conditions.".Length);
+                
+                // Check if the condition exists and return its value
+                if (ctx.Conditions.TryGetValue(conditionName, out bool value))
+                {
+                    return value;
+                }
+                return false;
+            }
+            
+            // Handle Context.Vars expressions
+            if (expr.StartsWith("Context.Vars."))
+            {
+                // Extract variable name (e.g., "Context.Vars.node_123_success" -> "node_123_success")
+                var varName = expr.Substring("Context.Vars.".Length);
+                
+                // Check if the variable exists and return its value
+                if (ctx.Vars.TryGetValue(varName, out object value))
+                {
+                    if (value is bool boolValue)
+                    {
+                        return boolValue;
+                    }
+                    else if (value is string stringValue)
+                    {
+                        return bool.TryParse(stringValue, out bool result) ? result : false;
+                    }
+                    else
+                    {
+                        return Convert.ToBoolean(value);
+                    }
+                }
+                return false;
+            }
+            
+            // Handle boolean literals
+            if (expr == "true")
+                return true;
+            if (expr == "false")
+                return false;
+                
+            return false;
         }
 
         private static object ResolveExpression(string expr)

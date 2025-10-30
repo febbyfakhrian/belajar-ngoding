@@ -1,214 +1,192 @@
 {
   "name": "Loop Split Batches Flow",
   "id": "c9f70a3a-5463-48db-889e-23be74c292ff",
-  "nodes": [
-    {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c2",
-      "name": "start",
-      "type": "action",
-      "parameters": { "actionKey": "Plc.LampOn" }
-    },
-    {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c3",
-      "name": "Camera Started",
-      "type": "trigger",
-      "parameters": { "triggerName": "CAMERA_STARTED" }
-    },
-    {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c4",
-      "name": "Camera Prepare",
-      "type": "action",
-      "parameters": { "actionKey": "Camera.Prepare" }
-    },
-    {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c5",
-      "name": "Lamp On",
-      "type": "action",
-      "parameters": { "actionKey": "Plc.SubscribeRead" }
-    },
-    {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c1",
-      "name": "Loop Start",
-      "type": "split-batches",
-      "parameters": { "batchSize": 4 }
-    },
-    {
-      "id": "c129b6f2-76a4-48c9-871e-0b19f510bdb0",
-      "name": "Capture Frame",
-      "type": "action",
-      "parameters": { "actionKey": "Camera.CaptureFrame" }
-    },
-    {
-      "id": "1e839c36-7588-495c-bb21-20a318b0ad4c",
-      "name": "Process Image",
-      "type": "action",
-      "parameters": { "actionKey": "Grpc.ProcessImage" }
-    },
-    {
-      "id": "5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b",
-      "name": "Loop End",
-      "type": "action",
-      "parameters": { "actionKey": "Finalize.Loop" }
-    },
-    {
-      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa4",
-      "name": "Post Loop Condition True",
-      "type": "condition",
-      "parameters": {
-        "conditions": {
-          "loopSuccess": "Context.Vars.node_5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b_success == true"
+    "nodes": [
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c2",
+            "name": "start",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.LampOn" }
+        },
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c3",
+            "name": "Camera Started",
+            "type": "trigger",
+            "parameters": { "triggerName": "CAMERA_STARTED" }
+        },
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c4",
+            "name": "Camera Prepare",
+            "type": "action",
+            "parameters": { "actionKey": "Camera.Prepare" }
+        },
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c5",
+            "name": "Lamp On",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.SubscribeRead" }
+        },
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c1",
+            "name": "Loop Start",
+            "type": "split-batches",
+            "parameters": { "batchSize": 3 }
+        },
+        {
+            "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6d2",
+            "name": "PLC Read Triggered",
+            "type": "trigger",
+            "parameters": { "triggerName": "PLC_READ_RECEIVED" }
+        },
+        {
+            "id": "c129b6f2-76a4-48c9-871e-0b19f510bdb0",
+            "name": "Capture Frame",
+            "type": "action",
+            "parameters": { "actionKey": "Camera.CaptureFrame" }
+        },
+        {
+            "id": "1e839c36-7588-495c-bb21-20a318b0ad4c",
+            "name": "Process Image",
+            "type": "action",
+            "parameters": { "actionKey": "Grpc.ProcessImage" }
+        },
+        {
+            "id": "5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b",
+            "name": "Loop End",
+            "type": "action",
+            "parameters": { "actionKey": "Finalize.Loop" }
+        },
+
+        {
+            "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa7",
+            "name": "Post Loop Action",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.SendFail" }
+        },
+        {
+            "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa8",
+            "name": "PLC Send Pass",
+            "type": "action",
+            "parameters": { "actionKey": "Plc.SendPass" }
         }
-      }
-    },
-    {
-      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa5",
-      "name": "Post Loop Condition False",
-      "type": "condition",
-      "parameters": {
-        "conditions": {
-          "loopFailed": "Context.Vars.node_5b8e12a1-bd2c-4f48-bb7d-8bb5ac0c537b_success == false"
+    ],
+    "connections": {
+        "start": {
+            "main": [
+                [
+                    {
+                        "node": "Camera Started",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Camera Started": {
+            "main": [
+                [
+                    {
+                        "node": "Camera Prepare",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Camera Prepare": {
+            "main": [
+                [
+                    {
+                        "node": "Lamp On",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Lamp On": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Start",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Start": {
+            "main": [
+                [
+                    {
+                        "node": "PLC Read Triggered",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ],
+            "done": [
+                [
+                    {
+                        "node": "Loop End",
+                        "key": "done",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PLC Read Triggered": {
+            "main": [
+                [
+                    {
+                        "node": "Capture Frame",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Capture Frame": {
+            "main": [
+                [
+                    {
+                        "node": "Process Image",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Process Image": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Start",
+                        "key": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop End": {
+            "main": [
+                [
+                    {
+                        "node": "PLC Send Pass",
+                        "key": "main",
+                        "index": 0,
+                        "when": "Context.FinalLabel == true"
+                    }
+                ],
+                [
+                    {
+                        "node": "Post Loop Action",
+                        "key": "main",
+                        "index": 0,
+                        "when": "Context.FinalLabel == false"
+                    }
+                ]
+            ]
         }
-      }
-    },
-    {
-      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa7",
-      "name": "Post Loop Action",
-      "type": "action",
-      "parameters": { "actionKey": "Plc.SendFail" }
-    },
-    {
-      "id": "6d8ef8a9-551f-4609-8340-6f8d4dc3daa8",
-      "name": "PLC Send Pass",
-      "type": "action",
-      "parameters": { "actionKey": "Plc.SendPass" }
     }
-  ],
-  "connections": {
-    "start": {
-      "main": [
-        [
-          {
-            "node": "Camera Started",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Camera Started": {
-      "main": [
-        [
-          {
-            "node": "Camera Prepare",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Camera Prepare": {
-      "main": [
-        [
-          {
-            "node": "Lamp On",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lamp On": {
-      "main": [
-        [
-          {
-            "node": "Loop Start",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Start": {
-      "main": [
-        [
-          {
-            "node": "Capture Frame",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ],
-      "done": [
-        [
-          {
-            "node": "Loop End",
-            "key": "done",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Capture Frame": {
-      "main": [
-        [
-          {
-            "node": "Process Image",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Process Image": {
-      "main": [
-        [
-          {
-            "node": "Loop Start",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop End": {
-      "main": [
-        [
-          {
-            "node": "Post Loop Condition True",
-            "key": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Post Loop Condition False",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Post Loop Condition True": {
-      "main": [
-        [
-          {
-            "node": "PLC Send Pass",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Post Loop Condition False": {
-      "main": [
-        [
-          {
-            "node": "Post Loop Action",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  }
 }

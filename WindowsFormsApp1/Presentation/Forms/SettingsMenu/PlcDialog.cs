@@ -100,7 +100,6 @@ namespace WindowsFormsApp1
                 // Kirim perintah PLC (misal)
                 byte[] command = WritePLCAddress.READ;
                 serial.Write(command, 0, command.Length);
-                Console.WriteLine($"[{startTime:HH:mm:ss.fff}] Kirim READ ke PLC...");
 
                 // Tunggu respons PLC (misal blocking read atau event)
                 string response = serial.ReadLine(); // atau dapat dari Serial_DataReceived
@@ -108,8 +107,6 @@ namespace WindowsFormsApp1
 
                 // Stop timer
                 double cycleTimeMs = CycleTimer.Stop();
-                Console.WriteLine($"[{endTime:HH:mm:ss.fff}] Respons PLC: {response}");
-                Console.WriteLine($"Cycle time final: {cycleTimeMs:F2} ms");
 
                 // Tambahkan log ke InspectionLogger
                 var result = new InspectionResult
