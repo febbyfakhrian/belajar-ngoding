@@ -391,6 +391,7 @@
     <Compile Include="DialogDebugMenuGrpc.Designer.cs">
       <DependentUpon>DialogDebugMenuGrpc.cs</DependentUpon>
     </Compile>
+    <Compile Include="Core\Domain\Actions\CycleTimerActions.cs" />
     <Compile Include="Core\Domain\Actions\CameraActions.cs" />
     <Compile Include="Core\Domain\Actions\GrpcActions.cs" />
     <Compile Include="Core\Domain\Actions\PlcActions.cs" />
@@ -419,6 +420,7 @@
     <Compile Include="Infrastructure\Hardware\Grpc\GrpcServiceFactory.cs" />
     <Compile Include="Infrastructure\Hardware\PLC\PlcOperation.cs" />
     <Compile Include="Infrastructure\Hardware\PLC\PlcServiceFactory.cs" />
+    <Compile Include="Infrastructure\Services\CycleTimeDbOperation.cs" />
     <Compile Include="Infrastructure\Services\CycleTimer.cs" />
     <Compile Include="Infrastructure\Services\HealthCheckService.cs" />
     <Compile Include="Infrastructure\Services\ImageDbOperation.cs" />
@@ -474,6 +476,12 @@
     </Compile>
     <Compile Include="Presentation\Forms\Flow\DiagramConfigurationForm.Designer.cs">
       <DependentUpon>DiagramConfigurationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Forms\CapturedFramePathDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\CapturedFramePathDialog.Designer.cs">
+      <DependentUpon>CapturedFramePathDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Presentation\Forms\SettingsMenu\CameraDialog.cs">
       <SubType>Form</SubType>
@@ -552,6 +560,9 @@
     <EmbeddedResource Include="Presentation\Forms\Flow\DiagramConfigurationForm.resx">
       <DependentUpon>DiagramConfigurationForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\CapturedFramePathDialog.resx">
+      <DependentUpon>CapturedFramePathDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\SettingsMenu\CameraDialog.resx">
       <DependentUpon>CameraDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -586,12 +597,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <None Include="flowconfig-workflow.yaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="flowconfig.yaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="inspectionflow.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

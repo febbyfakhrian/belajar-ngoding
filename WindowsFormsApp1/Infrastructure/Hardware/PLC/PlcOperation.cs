@@ -153,7 +153,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
                     : _cycleStopwatch.Elapsed.TotalMilliseconds);
 
                 _waitingResponse = false;
-                await Task.Delay(200); // jeda antar loop
+                await Task.Delay(50); // jeda antar loop
             }
 
             double avg = times.Count == 0 ? 0 : times.Average();

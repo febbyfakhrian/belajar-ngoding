@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using WindowsFormsApp1.Infrastructure.Data;
+using WindowsFormsApp1.Core.Interfaces; // Added for ISettingsService
 
 namespace WindowsFormsApp1.Core.Common.Helpers
 {
@@ -14,11 +15,13 @@ namespace WindowsFormsApp1.Core.Common.Helpers
 
         private static readonly BlockingCollection<FilePacket> _writeQueue = new BlockingCollection<FilePacket>(256);
         private readonly ImageDbOperation _dbHelper;
+        private static ISettingsService _settingsService; // Static field for settings service
 
-        // Constructor with dependency injection
-        public FileUtils(ImageDbOperation dbHelper)
+        // Constructor with dependency injection including settings service
+        public FileUtils(ImageDbOperation dbHelper, ISettingsService settingsService = null)
         {
             _dbHelper = dbHelper;
+            _settingsService = settingsService; // Store in static field
         }
 
         // Parameterless constructor for backward compatibility
@@ -60,10 +63,8 @@ namespace WindowsFormsApp1.Core.Common.Helpers
 
             _writerTask = Task.Run(() =>
             {
-                var dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    "CapturedFrames");
-
+                // Use path from settings service with fallback to default
+                var dir = GetCapturedFramesDirectory();
                 Directory.CreateDirectory(dir);
 
                 foreach (var pkt in _writeQueue.GetConsumingEnumerable())
@@ -97,9 +98,8 @@ namespace WindowsFormsApp1.Core.Common.Helpers
 
         public string FindById(string imageId)
         {
-            var dir = Path.Combine(
-                   Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                   "CapturedFrames");
+            // Use path from settings service with fallback to default
+            var dir = GetCapturedFramesDirectory();
             
             // Use the injected dbHelper if available, otherwise fall back to static
             var fn = _dbHelper?.FindById(imageId) ?? DatabaseDialog.DbHelper?.FindById(imageId);
@@ -109,14 +109,45 @@ namespace WindowsFormsApp1.Core.Common.Helpers
 
         public string GetLatestImage()
         {
-            var dir = Path.Combine(
-                   Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                   "CapturedFrames");
+            // Use path from settings service with fallback to default
+            var dir = GetCapturedFramesDirectory();
             
             // Use the injected dbHelper if available, otherwise fall back to static
             var fn = _dbHelper?.GetLatestImageById() ?? DatabaseDialog.DbHelper?.GetLatestImageById();
 
             return fn == null ? null : Path.Combine(dir, fn);
+        }
+
+        /// <summary>
+        /// Gets the captured frames directory path from settings service or falls back to default
+        /// </summary>
+        /// <returns>The directory path for captured frames</returns>
+        private static string GetCapturedFramesDirectory()
+        {
+            string savedPath = null;
+            
+            try
+            {
+                // Try to get the saved folder path from settings service
+                savedPath = _settingsService?.GetSetting<string>("captured_frames", "folder_path");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to get saved folder path from settings: {ex.Message}");
+            }
+
+            // Use the saved path if available and valid, otherwise fallback to default
+            if (!string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath))
+            {
+                return savedPath;
+            }
+            else
+            {
+                // Fallback to default path on desktop
+                return Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "CapturedFrames");
+            }
         }
     }
 }

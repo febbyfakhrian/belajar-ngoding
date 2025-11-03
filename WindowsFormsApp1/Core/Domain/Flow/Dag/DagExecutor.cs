@@ -171,16 +171,17 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                                 // Get or create the state for this split-batches node
                                 // Only initialize if it doesn't exist yet
                                 int batchSize = GetIntValue(node.Parameters, "batchSize", 1);
+                                bool isUnlimited = batchSize <= 0;
                                 var state = _activeSplitBatches.GetOrAdd(node.Id, id => new SplitBatchState { BatchSize = batchSize, CurrentBatch = 0 });
                                 
                                 // Increment the batch counter
                                 state.CurrentBatch++;
-                                
+
                                 // Determine which path to take based on current batch count
                                 // For batchSize=4, we want to execute 4 times, then take "done" path
                                 // So we take "main" path when CurrentBatch < BatchSize
-                                string requiredKey = (state.CurrentBatch > state.BatchSize) ? "done" : "main";
-                                
+                                string requiredKey = (isUnlimited || state.CurrentBatch < batchSize) ? "main" : "done";
+
                                 // Filter edges to only include those with the required key
                                 filteredEdges = edges.Where(e => e.Key == requiredKey).ToList();
                                 

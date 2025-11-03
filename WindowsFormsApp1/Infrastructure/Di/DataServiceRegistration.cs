@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using WindowsFormsApp1.Core.Interfaces;
 using WindowsFormsApp1.Infrastructure.Data;
+using WindowsFormsApp1.Infrastructure.Services;
 using System.Data.SQLite;
 
 namespace WindowsFormsApp1.Infrastructure.Di
@@ -16,6 +17,8 @@ namespace WindowsFormsApp1.Infrastructure.Di
             services.AddSingleton<ISettingsService, SettingsOperation>();
             // Register ImageDbOperation with its required dependency
             services.AddSingleton<ImageDbOperation>(provider => new ImageDbOperation(provider.GetRequiredService<SQLiteConnection>()));
+            // Register CycleTimeDbOperation with its required dependency
+            services.AddSingleton<CycleTimeDbOperation>(provider => new CycleTimeDbOperation(provider.GetRequiredService<SQLiteConnection>()));
         }
     }
 }

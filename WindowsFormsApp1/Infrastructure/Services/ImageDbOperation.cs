@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data.SQLite;
 using WindowsFormsApp1.Core.Entities.Models;
+using System.Collections.Generic;
+using System.Data;
 
 namespace WindowsFormsApp1.Infrastructure.Data
 {
@@ -59,6 +61,42 @@ namespace WindowsFormsApp1.Infrastructure.Data
 
                 return result?.ToString();
             }
+        }
+
+        /// <summary>
+        /// Fetch all images from the images table
+        /// </summary>
+        public DataTable GetAllImages()
+        {
+            var dataTable = new DataTable();
+            dataTable.Columns.Add("ID", typeof(int));
+            dataTable.Columns.Add("File Name", typeof(string));
+            dataTable.Columns.Add("Image ID", typeof(string));
+
+            using (var cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT id, file_name, image_id FROM images ORDER BY id DESC";
+
+                // Ensure connection is open
+                if (_connection.State != ConnectionState.Open)
+                {
+                    _connection.Open();
+                }
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var row = dataTable.NewRow();
+                        row["ID"] = reader["id"];
+                        row["File Name"] = reader["file_name"];
+                        row["Image ID"] = reader["image_id"];
+                        dataTable.Rows.Add(row);
+                    }
+                }
+            }
+
+            return dataTable;
         }
 
         /// <summary>

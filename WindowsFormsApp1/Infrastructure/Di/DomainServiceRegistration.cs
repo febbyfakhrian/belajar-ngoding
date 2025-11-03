@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WindowsFormsApp1.Core.Domain.Flow.Engine;
 using WindowsFormsApp1.Core.Domain.Flow.Dag;
 using WindowsFormsApp1.Core.Domain.Actions;
+using WindowsFormsApp1.Infrastructure.Services;
 
 namespace WindowsFormsApp1.Infrastructure.Di
 {
@@ -34,6 +35,10 @@ namespace WindowsFormsApp1.Infrastructure.Di
             services.AddTransient<IFlowAction, FinalizeLoopAction>(); // Add the missing Finalize.Loop action
             services.AddTransient<IFlowAction, LoopControllerAction>();
             services.AddTransient<IFlowAction, LoopResetAction>();
+            
+            // Cycle timer actions
+            services.AddTransient<IFlowAction, CycleTimerStartAction>();
+            services.AddTransient<IFlowAction, CycleTimerEndAction>();
         }
     }
 }

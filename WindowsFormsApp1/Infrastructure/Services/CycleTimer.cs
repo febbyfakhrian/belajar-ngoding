@@ -8,7 +8,7 @@ namespace WindowsFormsApp1.Infrastructure.Services.Services
     /// </summary>
     public static class CycleTimer
     {
-        private static Stopwatch _stopwatch = new Stopwatch();
+        private static readonly Stopwatch _stopwatch = new Stopwatch();
         
         /// <summary>
         /// Starts the cycle timer.

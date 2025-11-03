@@ -55,17 +55,38 @@ namespace WindowsFormsApp1.Core.Domain.Actions
 
         private readonly ICameraService _cam;
         private readonly ImageDbOperation _db;
+        private readonly ISettingsService _settings;
         private readonly string _saveRoot;
         private static readonly object _fileLock = new object(); // Static lock for thread safety across instances
 
-        public CameraCaptureFrameAction(ICameraService cam, ImageDbOperation db)
+        public CameraCaptureFrameAction(ICameraService cam, ImageDbOperation db, ISettingsService settings = null)
         {
             _cam = cam;
             _db = db;
+            _settings = settings;
 
-            _saveRoot = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                "CapturedFrames");
+            // Try to get the saved folder path from settings, fallback to desktop if not available
+            string savedPath = null;
+            try
+            {
+                savedPath = _settings?.GetSetting<string>("captured_frames", "folder_path");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to get saved folder path from settings: {ex.Message}");
+            }
+
+            // Use the saved path if available and valid, otherwise fallback to default
+            if (!string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath))
+            {
+                _saveRoot = savedPath;
+            }
+            else
+            {
+                _saveRoot = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "CapturedFrames");
+            }
 
             Directory.CreateDirectory(_saveRoot);
         }

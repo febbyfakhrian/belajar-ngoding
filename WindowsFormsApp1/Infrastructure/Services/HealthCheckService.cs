@@ -17,43 +17,43 @@ namespace WindowsFormsApp1.Infrastructure.Services
             _grpcService = grpcService;
         }
         
-        public async Task<bool> CheckCameraHealthAsync()
+        public Task<bool> CheckCameraHealthAsync()
         {
             try
             {
                 // Check if camera SDK is available
-                return _cameraService.IsCameraSdkAvailable;
+                return Task.FromResult(_cameraService.IsCameraSdkAvailable);
             }
             catch (Exception)
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
         
-        public async Task<bool> CheckPlcHealthAsync()
+        public Task<bool> CheckPlcHealthAsync()
         {
             try
             {
                 // Check if PLC is connected
-                return _plcService.IsOpen;
+                return Task.FromResult(_plcService.IsOpen);
             }
             catch (Exception)
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
         
-        public async Task<bool> CheckGrpcHealthAsync()
+        public Task<bool> CheckGrpcHealthAsync()
         {
             try
             {
                 // For now, we'll just return true as we don't have a specific health check method
                 // In a real implementation, you would call a health check endpoint
-                return true;
+                return Task.FromResult(true);
             }
             catch (Exception)
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
         

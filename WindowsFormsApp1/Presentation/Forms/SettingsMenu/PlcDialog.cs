@@ -24,17 +24,39 @@ namespace WindowsFormsApp1
         private bool testRunning = false;
         private List<double> cycleTimes = new List<double>();
         private InspectionLogger logger = new InspectionLogger(); // bisa diinisialisasi global/form
-        private StringBuilder rxBuffer = new StringBuilder();
         private int _lineStart = 0;   // posisi awal baris saat ini
         private readonly IServiceProvider _serviceProvider;
         private IPlcService _plcService;
+        private readonly ISettingsService _settingsService; // Made readonly
 
         // Constructor with dependency injection
-        public PlcDialog(IServiceProvider serviceProvider)
+        public PlcDialog(IServiceProvider serviceProvider, ISettingsService settingsService = null)
         {
             _serviceProvider = serviceProvider;
+            _settingsService = settingsService ?? GetSettingsServiceFromProvider();
             InitializeComponent();
             // Setup Serial Port
+        }
+
+        private ISettingsService GetSettingsServiceFromProvider()
+        {
+            // If we have a service provider, use it to get the service
+            if (_serviceProvider != null)
+            {
+                try
+                {
+                    return _serviceProvider.GetRequiredService<ISettingsService>();
+                }
+                catch (Exception ex)
+                {
+                    // Log the error for debugging purposes
+                    Debug.WriteLine($"Error getting settings service from provider: {ex.Message}");
+                    Console.WriteLine($"Error getting settings service from provider: {ex.Message}");
+                }
+            }
+
+            // Fallback to null for backward compatibility
+            return null;
         }
 
         // Legacy constructor for backward compatibility
@@ -83,10 +105,6 @@ namespace WindowsFormsApp1
                 plcLogBox.SelectionStart = plcLogBox.Text.Length;
                 plcLogBox.ScrollToCaret();
             }));
-
-            // Simpan ke list benchmark
-            if (testRunning)
-                cycleTimes.Add(cycleMs);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -372,7 +390,9 @@ namespace WindowsFormsApp1
                 sendCommandBtn.Enabled = false;
                 button1.Enabled = false;
                 comboBoxDevices.Enabled = false;
-                
+
+                _settingsService.SetSetting("plc", "is_used", "False");
+
                 // Log the state change
                 Console.WriteLine("[PLC] PLC functionality disabled by user");
             }
@@ -400,7 +420,9 @@ namespace WindowsFormsApp1
                 sendCommandBtn.Enabled = true;
                 button1.Enabled = true;
                 comboBoxDevices.Enabled = true;
-                
+
+                _settingsService.SetSetting("plc", "is_used", "True");
+
                 // Log the state change
                 Console.WriteLine("[PLC] PLC functionality enabled by user");
             }

@@ -65,7 +65,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
     {
         public override string Key => "Flow.LoopController";
         
-        public override async Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
+        public override Task ExecuteAsync(IFlowContext ctx, CancellationToken ct = default)
         {
             // Get loop parameters from context vars
             var loopId = ctx.Vars.ContainsKey("loopId") ? ctx.Vars["loopId"].ToString() : Guid.NewGuid().ToString();
@@ -79,6 +79,7 @@ namespace WindowsFormsApp1.Core.Domain.Actions
             // We'll just set a context variable to indicate loop status
             ctx.Vars["loopActive"] = true;
             ctx.Vars["loopId"] = loopId;
+            return Task.CompletedTask;
         }
     }
     

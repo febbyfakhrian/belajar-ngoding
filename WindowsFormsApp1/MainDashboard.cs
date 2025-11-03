@@ -26,6 +26,8 @@ using WindowsFormsApp1.Presentation.Flow;
 using WindowsFormsApp1.Infrastructure.Hardware.Grpc;
 using WindowsFormsApp1.Core.Interfaces;
 using WindowsFormsApp1.Infrastructure.Di;
+using WindowsFormsApp1.Infrastructure.Data;
+using WindowsFormsApp1.Infrastructure.Services;
 
 namespace WindowsFormsApp1
 {
@@ -37,6 +39,7 @@ namespace WindowsFormsApp1
         private readonly ImageGrabber _grabber = new ImageGrabber();
         //private readonly FileUtils _fileUtils = new FileUtils();
         //private ImageDbOperation _imageDb => Program.DbHelper;
+        private readonly ImageDbOperation _imageDbOperation;
 
         // Hik SDK discovery store
         private MyCamera.MV_CC_DEVICE_INFO_LIST _deviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
@@ -84,6 +87,7 @@ namespace WindowsFormsApp1
             _plc = provider.GetRequiredService<Core.Interfaces.IPlcService>(); // Initialize PLC service
             _grpc = provider.GetRequiredService<IGrpcService>(); // Initialize gRPC service from DI container
             _settingsService = provider.GetRequiredService<ISettingsService>();
+            _imageDbOperation = provider.GetRequiredService<ImageDbOperation>(); // Initialize ImageDbOperation
 
             _cam.Error += msg => MessageBox.Show(msg);
             _grabber.FramePreview += OnFramePreview;
@@ -122,11 +126,11 @@ namespace WindowsFormsApp1
             }
 
             // Cancel tasks
-            if (_ctsPreview != null) _ctsPreview.Cancel();
+            _ctsPreview?.Cancel();
             _ctsForward.Cancel();
 
             // Dispose devices
-            if (_cam != null) _cam.Dispose();
+            _cam?.Dispose();
             if (_grpc != null) await _grpc.StopAsync();
         }
 
@@ -140,7 +144,7 @@ namespace WindowsFormsApp1
                     "DoubleBuffered",
                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
                 );
-                if (prop != null) prop.SetValue(c, true, null);
+                prop?.SetValue(c, true, null);
             }
             catch { /* ignore */ }
         }
@@ -584,7 +588,7 @@ namespace WindowsFormsApp1
             _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia
         }
 
-        private async void btnStartGrab_Click(object sender, EventArgs e)
+        private void btnStartGrab_Click(object sender, EventArgs e)
         {
             int nRet = NecessaryOperBeforeGrab();
             if (MyCamera.MV_OK != nRet)
@@ -618,6 +622,8 @@ namespace WindowsFormsApp1
             _ctx.Trigger = "CAMERA_STARTED";
             pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
             stopCameraBtn.Enabled = true;
+            frameResultInspectionRadioButton.Enabled = false;
+            componentResultInspectionRadioButton.Enabled = false;
         }
 
         private void stopCamera_Click(object sender, EventArgs e)
@@ -630,6 +636,8 @@ namespace WindowsFormsApp1
 
             tableLayoutPanel9.RowCount = 2;
             labelCameraInspection.Visible = true;
+            frameResultInspectionRadioButton.Enabled = true;
+            componentResultInspectionRadioButton.Enabled = true;
         }
 
 
@@ -785,31 +793,40 @@ namespace WindowsFormsApp1
                 BuildUiFirstTime(result, flowLayoutPanel1);
                 UpdateUiInspectionResult(result, flowLayoutPanel1);
             }
+            
+            LoadCycleTimesFromDatabase();
         }
 
         private void UpdateUiInspectionResult(Root data, Control parent)
         {
             if (data == null || data.Components == null) return;
             parent.SuspendLayout();
-            Console.WriteLine("update ui");
 
             foreach (var kv in data.Components)
             {
-                Console.WriteLine(kv.Key);
                 string key = kv.Key;
 
-                var imgBox = parent.Controls.Find("imgBox_" + key, true).FirstOrDefault() as PictureBox;
-                var resultLbl = parent.Controls.Find("resultLbl_" + key, true).FirstOrDefault() as Label;
-                var parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
-                var innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
+                PictureBox imgBox = parent.Controls.Find("imgBox_" + key, true).FirstOrDefault() as PictureBox;
+                Label resultLbl = parent.Controls.Find("resultLbl_" + key, true).FirstOrDefault() as Label;
+                ReaLTaiizor.Controls.ParrotWidgetPanel parrot = parent.Controls.Find("parrot_" + key, true).FirstOrDefault() as ReaLTaiizor.Controls.ParrotWidgetPanel;
+                TableLayoutPanel innerTable = parent.Controls.Find("innerTable_" + key, true).FirstOrDefault() as TableLayoutPanel;
 
                 if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) continue;
 
                 var item = kv.Value.FirstOrDefault();
                 if (item == null) continue;
 
-                var fileImage = _fileUtils.GetLatestImage();
-                Console.WriteLine(fileImage);
+                string fileImage = "";
+
+                if (string.IsNullOrEmpty(item.ImageId) || item.ImageId == "0")
+                {
+                    fileImage = _fileUtils.GetLatestImage();
+                }
+                else
+                {
+                    fileImage = _fileUtils.FindById(item.ImageId);
+                }
+
                 if (string.IsNullOrEmpty(fileImage) || !File.Exists(fileImage)) continue;
 
                 Bitmap srcBmp;
@@ -1048,7 +1065,6 @@ namespace WindowsFormsApp1
 
         private void BuildUiFirstTime(Root data, FlowLayoutPanel parent)
         {
-            Console.WriteLine("build ui firsttime");
             parent.Controls.Clear();
 
             foreach (var kv in data.Components)
@@ -1154,43 +1170,73 @@ namespace WindowsFormsApp1
         }
 
         // ------------- Misc buttons -------------
-
-        private void button2_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Fetch data from images table and display in a DataGridView
+        /// </summary>
+        private void LoadImagesFromDatabase()
         {
-            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Logs");
-            string filePath = Path.Combine(folder, "Inspection_20251010_113839.json");
-            LoadJsonToTable(filePath);
-        }
-
-        private void LoadJsonToTable(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                MessageBox.Show("File JSON tidak ditemukan: " + filePath);
-                return;
-            }
-
             try
             {
-                string json = File.ReadAllText(filePath);
-                var summary = JsonConvert.DeserializeObject<CycleTimeSummary>(json);
+                // Use the new method to fetch all images
+                var dataTable = _imageDbOperation.GetAllImages();
 
-                if (summary == null || summary.Logs == null || summary.Logs.Count == 0)
-                {
-                    MessageBox.Show("Tidak ada log untuk ditampilkan.");
-                    return;
-                }
-
-                dataGridView1.DataSource = summary.Logs;
-                dataGridView1.Columns["TransactionId"].HeaderText = "ID Transaksi";
-                dataGridView1.Columns["Timestamp"].HeaderText = "Waktu";
-                dataGridView1.Columns["CycleTimeMs"].HeaderText = "Cycle Time (ms)";
-                dataGridView1.Columns["RawResponse"].HeaderText = "Response";
-                dataGridView1.Columns["Pass"].HeaderText = "Pass/Fail";
+                // Bind the data to the DataGridView
+                resultInspectionDataGridView.DataSource = dataTable;
+                
+                // Update column headers
+                if (resultInspectionDataGridView.Columns["ID"] != null)
+                    resultInspectionDataGridView.Columns["ID"].HeaderText = "ID";
+                if (resultInspectionDataGridView.Columns["File Name"] != null)
+                    resultInspectionDataGridView.Columns["File Name"].HeaderText = "File Name";
+                if (resultInspectionDataGridView.Columns["Image ID"] != null)
+                    resultInspectionDataGridView.Columns["Image ID"].HeaderText = "Image ID";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Gagal load JSON: " + ex.Message);
+                MessageBox.Show("Failed to load images from database: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Fetch data from cycle_times table and display in a DataGridView
+        /// </summary>
+        private void LoadCycleTimesFromDatabase()
+        {
+            try
+            {
+                // Get the CycleTimeDbOperation service
+                var cycleTimeDbOperation = _provider.GetRequiredService<CycleTimeDbOperation>();
+                
+                // Use the new method to fetch all cycle times
+                var dataTable = cycleTimeDbOperation.GetAllCycleTimes();
+                var summaryDataTable = cycleTimeDbOperation.SummaryInspectionResult();
+
+                summaryInspectionResultDataGridView.DataSource = summaryDataTable;
+
+                // Bind the data to the DataGridView
+                resultInspectionDataGridView.DataSource = dataTable;
+                
+                // Update column headers
+                if (resultInspectionDataGridView.Columns["ID"] != null)
+                    resultInspectionDataGridView.Columns["ID"].HeaderText = "ID";
+                if (resultInspectionDataGridView.Columns["Transaction ID"] != null)
+                    resultInspectionDataGridView.Columns["Transaction ID"].HeaderText = "Transaction ID";
+                if (resultInspectionDataGridView.Columns["Start Time"] != null)
+                    resultInspectionDataGridView.Columns["Start Time"].HeaderText = "Start Time";
+                if (resultInspectionDataGridView.Columns["End Time"] != null)
+                    resultInspectionDataGridView.Columns["End Time"].HeaderText = "End Time";
+                if (resultInspectionDataGridView.Columns["Cycle Time (ms)"] != null)
+                    resultInspectionDataGridView.Columns["Cycle Time (ms)"].HeaderText = "Cycle Time (ms)";
+                if (resultInspectionDataGridView.Columns["Pass"] != null)
+                    resultInspectionDataGridView.Columns["Pass"].HeaderText = "Pass";
+                if (resultInspectionDataGridView.Columns["Image ID"] != null)
+                    resultInspectionDataGridView.Columns["Image ID"].HeaderText = "Image ID";
+                if (resultInspectionDataGridView.Columns["Created At"] != null)
+                    resultInspectionDataGridView.Columns["Created At"].HeaderText = "Created At";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load cycle times from database: " + ex.Message);
             }
         }
 
@@ -1208,7 +1254,7 @@ namespace WindowsFormsApp1
         }
 
         // Events required by original code
-        public event Action<byte[]> FrameEncoded;
+        public event Action<byte[]> FrameEncoded;   
         public event Action<string> Error;
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
@@ -1237,6 +1283,27 @@ namespace WindowsFormsApp1
             var dialog = new WorkflowDialog(_provider);
 
             dialog.Show();
+        }
+
+        private void foreverTabPage1_Selected(object sender, TabControlEventArgs e)
+        {
+            if (foreverTabPage1.SelectedIndex == 1)
+            {
+                LoadCycleTimesFromDatabase();
+            };
+        }
+
+        private void capturedFrameInspectionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Get the settings service from the provider
+            var settingsService = _provider?.GetService(typeof(Core.Interfaces.ISettingsService)) as Core.Interfaces.ISettingsService;
+            
+            // Create the dialog with the settings service
+            using (var dialog = new CapturedFramePathDialog(settingsService))
+            {
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.ShowDialog(this);
+            }
         }
     }
 }

@@ -22,6 +22,8 @@ namespace WindowsFormsApp1
 
         private void foreverButton1_Click(object sender, EventArgs e)
         {
+            var dashboard = new MainDashboard(_provider);
+            dashboard.Show();
             var sqliteConnection = new SQLiteConnection(_connectionString);
             sqliteConnection.Open();
             using (var cmd = sqliteConnection.CreateCommand())
@@ -37,8 +39,8 @@ namespace WindowsFormsApp1
                         // Successful login
                         sqliteConnection.Close();
                         this.Hide();
-                        var dashboard = new MainDashboard(_provider);
-                        dashboard.Show();
+                        //var dashboard = new MainDashboard(_provider);
+                        //dashboard.Show();
                     }
                     else
                     {

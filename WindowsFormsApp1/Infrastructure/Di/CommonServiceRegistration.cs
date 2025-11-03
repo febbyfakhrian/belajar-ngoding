@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using WindowsFormsApp1.Core.Common.Helpers;
 using WindowsFormsApp1.Infrastructure.Data;
+using WindowsFormsApp1.Core.Interfaces; // Added for ISettingsService
 
 namespace WindowsFormsApp1.Infrastructure.Di
 {
@@ -10,7 +11,9 @@ namespace WindowsFormsApp1.Infrastructure.Di
         {
             // Common services
             services.AddSingleton<FileUtils>(provider => 
-                new FileUtils(provider.GetRequiredService<ImageDbOperation>()));
+                new FileUtils(
+                    provider.GetRequiredService<ImageDbOperation>(),
+                    provider.GetService<ISettingsService>())); // Added settings service
             services.AddSingleton<ImageGrabber>();
             services.AddSingleton<VideoGrabber>();
         }
