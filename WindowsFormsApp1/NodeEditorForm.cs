@@ -18,6 +18,26 @@ namespace WindowsFormsApp1
         public NodeEditorForm()
         {
             InitializeComponent();
+            RegisterCameraActionsToTree();
+            stNodeEditorPannel1.Editor.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete)
+                {
+                    var selected = stNodeEditorPannel1.Editor.GetSelectedNode().ToList();
+                    if (selected.Count == 0) return;
+
+                    // (optional) confirm deletion
+                    if (MessageBox.Show($"Delete {selected.Count} selected node(s)?",
+                                        "Confirm",
+                                        MessageBoxButtons.YesNo,
+                                        MessageBoxIcon.Warning) == DialogResult.Yes)
+                    {
+                        foreach (var node in selected)
+                            stNodeEditorPannel1.Editor.Nodes.Remove(node);
+                    }
+                }
+            };
+
         }
 
         private void NodeEditorForm_Load(object sender, EventArgs e)
@@ -47,7 +67,7 @@ namespace WindowsFormsApp1
                 var workflow = JsonConvert.DeserializeObject<Workflow>(jsonContent);
 
                 // Clear existing nodes
-                stNodeEditor1.Nodes.Clear();
+                stNodeEditorPannel1.Editor.Nodes.Clear();
 
                 // Create nodes
                 int xPos = 50;
@@ -69,7 +89,7 @@ namespace WindowsFormsApp1
                     currentCol++;
                     if (currentCol > 3) { currentCol = 0; currentRow++; }
 
-                    stNodeEditor1.Nodes.Add(dynamicNode);
+                    stNodeEditorPannel1.Editor.Nodes.Add(dynamicNode);
                     nodeMap[node.Name] = dynamicNode; // simpan untuk koneksi
                 }
 
@@ -127,7 +147,8 @@ namespace WindowsFormsApp1
                             }
                         }
 
-                        stNodeEditor1.Refresh();
+                        stNodeEditorPannel1.TreeView.AddNode(typeof(MyNode));
+                        stNodeEditorPannel1.Editor.Refresh();
                     }
                     catch (Exception ex)
                     {
@@ -140,30 +161,45 @@ namespace WindowsFormsApp1
                 MessageBox.Show("Error loading workflow: " + ex.Message + "\n" + ex.StackTrace);
             }
         }
+
+
+        private void RegisterCameraActionsToTree()
+        {
+            // 1) Assembly tempat aksi kamera didefinisikan
+            var asm = typeof(WindowsFormsApp1.Core.Domain.Actions.CameraPrepareAction).Assembly;
+
+            // 2) Filter: kelas konkrit di namespace kamera dan turunan BaseAction
+            var baseActionType = typeof(WindowsFormsApp1.Core.Domain.Actions.BaseAction); // sesuaikan jika namespace BaseAction berbeda
+            var camNs = "WindowsFormsApp1.Core.Domain.Actions";
+
+            var actionTypes =
+                asm.GetTypes()
+                   .Where(t => t.IsClass && !t.IsAbstract)
+                   .Where(t => t.Namespace == camNs)
+                   .Where(t => baseActionType.IsAssignableFrom(t))
+                   .ToList();
+
+            // 3) Untuk tiap aksi, buat closed generic ActionNode<TAction> dan tambahkan ke tree
+            foreach (var actType in actionTypes)
+            {
+                var nodeType = typeof(ActionNode<>).MakeGenericType(actType);
+                stNodeEditorPannel1.TreeView.AddNode(nodeType); // kategori
+            }
+
+            // (Opsional) refresh editor/panel
+            stNodeEditorPannel1.Editor.Refresh();
+        }
     }
 
-    public class NodeA : STNode
+    [STNode("My Node")]
+    public class MyNode : STNode
     {
-        private STNodeOption _out;
         protected override void OnCreate()
         {
             base.OnCreate();
-            Title = "NodeA";
-            _out = this.OutputOptions.Add("OutData", typeof(int), false);
+            this.Title = "MyNode";
+            // ... isi node ...
         }
-        public STNodeOption OutDataSlot => _out;
-    }
-
-    public class NodeB : STNode
-    {
-        private STNodeOption _in;
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            Title = "NodeB";
-            _in = this.InputOptions.Add("InData", typeof(int), true); // izinkan koneksi, selaras NumberAddNode
-        }
-        public STNodeOption InDataSlot => _in;
     }
 
     // Classes to represent the JSON structure
@@ -268,4 +304,33 @@ namespace WindowsFormsApp1
             }
         }
     }
-}
+
+    [STNode("asdas/gfdgdfg")]
+    public class ActionNode<TAction> : STNode
+    {
+        private STNodeOption _inMain;
+        private STNodeOption _outMain;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+
+            // Judul node = nama tipe aksi
+            var actionType = typeof(TAction);
+            this.Title = actionType.Name;                // contoh: CameraPrepareAction
+            this.Size = new Size(200, 90);
+
+            // Port standar untuk alur
+            _inMain = this.InputOptions.Add("in", typeof(object), true);   // bisa menerima 1+ koneksi
+            _outMain = this.OutputOptions.Add("out", typeof(object), false); // 1 koneksi keluar
+
+            // Opsional: warna/ikon khusus untuk grup "Camera"
+            this.TitleColor = Color.FromArgb(200, Color.SteelBlue);
+        }
+
+        // Properti expose jika perlu
+        public STNodeOption InMain => _inMain;
+        public STNodeOption OutMain => _outMain;
+    }
+
+ }

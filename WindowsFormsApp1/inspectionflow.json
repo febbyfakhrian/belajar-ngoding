@@ -9,7 +9,7 @@
       "parameters": { "actionKey": "Plc.LampOn" }
     },
     {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c4",
+      "id": "a16c373e-7f3d-4807-8807-4d60923147f3",
       "name": "Cycle Time Start",
       "type": "action",
       "parameters": { "actionKey": "CycleTimer.Start" }
@@ -36,7 +36,7 @@
       "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c1",
       "name": "Loop Start",
       "type": "split-batches",
-      "parameters": { "batchSize": 1 }
+      "parameters": { "batchSize": -1 }
     },
     {
       "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6d2",
@@ -75,7 +75,7 @@
       "parameters": { "actionKey": "Plc.SendPass" }
     },
     {
-      "id": "a0f5f2a4-1b2d-4f33-8f38-bf83a4b4f6c9",
+      "id": "3e03ec76-eede-4d1e-83eb-074bdc9329ac",
       "name": "Cycle Time End",
       "type": "action",
       "parameters": { "actionKey": "CycleTimer.End" }
@@ -83,17 +83,6 @@
   ],
   "connections": {
     "start": {
-      "main": [
-        [
-          {
-            "node": "Cycle Time Start",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Cycle Time Start": {
       "main": [
         [
           {
@@ -151,13 +140,24 @@
         [
           {
             "node": "Loop End",
-            "key": "done",
+            "key": "main",
             "index": 0
           }
         ]
       ]
     },
     "PLC Read Triggered": {
+      "main": [
+        [
+          {
+            "node": "Cycle Time Start",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cycle Time Start": {
       "main": [
         [
           {
@@ -183,6 +183,48 @@
       "main": [
         [
           {
+            "node": "PLC Send Pass",
+            "key": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Loop Action",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PLC Send Pass": {
+      "main": [
+        [
+          {
+            "node": "Cycle Time End",
+            "key": "main",
+            "index": 0,
+            "when": "Context.FinalLabel == true"
+          }
+        ]
+      ]
+    },
+    "Post Loop Action": {
+      "main": [
+        [
+          {
+            "node": "Cycle Time End",
+            "key": "main",
+            "index": 0,
+            "when": "Context.FinalLabel == false"
+          }
+        ]
+      ]
+    },
+    "Cycle Time End": {
+      "main": [
+        [
+          {
             "node": "Loop Start",
             "key": "main",
             "index": 0
@@ -191,31 +233,7 @@
       ]
     },
     "Loop End": {
-      "main": [
-        [
-          {
-            "node": "PLC Send Pass",
-            "key": "main",
-            "index": 0,
-            "when": "Context.FinalLabel == true"
-          }
-        ],
-        [
-          {
-            "node": "Post Loop Action",
-            "key": "main",
-            "index": 0,
-            "when": "Context.FinalLabel == false"
-          }
-        ],
-        [
-          {
-            "node": "Cycle Time End",
-            "key": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": []
     }
   }
 }

@@ -28,62 +28,27 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.stNodeEditor1 = new ST.Library.UI.NodeEditor.STNodeEditor();
             this.stNodeEditorPannel1 = new ST.Library.UI.NodeEditor.STNodeEditorPannel();
-            this.stNodePropertyGrid1 = new ST.Library.UI.NodeEditor.STNodePropertyGrid();
             this.SuspendLayout();
-            // 
-            // stNodeEditor1
-            // 
-            this.stNodeEditor1.AllowDrop = true;
-            this.stNodeEditor1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(34)))), ((int)(((byte)(34)))));
-            this.stNodeEditor1.Curvature = 0.3F;
-            this.stNodeEditor1.Location = new System.Drawing.Point(360, 12);
-            this.stNodeEditor1.LocationBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.stNodeEditor1.MarkBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.stNodeEditor1.MarkForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.stNodeEditor1.MinimumSize = new System.Drawing.Size(100, 100);
-            this.stNodeEditor1.Name = "stNodeEditor1";
-            this.stNodeEditor1.Size = new System.Drawing.Size(1094, 681);
-            this.stNodeEditor1.TabIndex = 0;
-            this.stNodeEditor1.Text = "stNodeEditor1";
             // 
             // stNodeEditorPannel1
             // 
             this.stNodeEditorPannel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(34)))), ((int)(((byte)(34)))));
-            this.stNodeEditorPannel1.Location = new System.Drawing.Point(-1, 2);
+            this.stNodeEditorPannel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.stNodeEditorPannel1.Location = new System.Drawing.Point(0, 0);
             this.stNodeEditorPannel1.MinimumSize = new System.Drawing.Size(250, 250);
             this.stNodeEditorPannel1.Name = "stNodeEditorPannel1";
-            this.stNodeEditorPannel1.Size = new System.Drawing.Size(299, 544);
+            this.stNodeEditorPannel1.Size = new System.Drawing.Size(1566, 867);
             this.stNodeEditorPannel1.TabIndex = 1;
             this.stNodeEditorPannel1.Text = "stNodeEditorPannel1";
             this.stNodeEditorPannel1.Y = 250;
-            // 
-            // stNodePropertyGrid1
-            // 
-            this.stNodePropertyGrid1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(35)))), ((int)(((byte)(35)))));
-            this.stNodePropertyGrid1.DescriptionColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(184)))), ((int)(((byte)(134)))), ((int)(((byte)(11)))));
-            this.stNodePropertyGrid1.ErrorColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(165)))), ((int)(((byte)(42)))), ((int)(((byte)(42)))));
-            this.stNodePropertyGrid1.ForeColor = System.Drawing.Color.White;
-            this.stNodePropertyGrid1.ItemHoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))), ((int)(((byte)(125)))));
-            this.stNodePropertyGrid1.ItemValueBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.stNodePropertyGrid1.Location = new System.Drawing.Point(-1, 552);
-            this.stNodePropertyGrid1.MinimumSize = new System.Drawing.Size(120, 50);
-            this.stNodePropertyGrid1.Name = "stNodePropertyGrid1";
-            this.stNodePropertyGrid1.ShowTitle = true;
-            this.stNodePropertyGrid1.Size = new System.Drawing.Size(200, 150);
-            this.stNodePropertyGrid1.TabIndex = 2;
-            this.stNodePropertyGrid1.Text = "stNodePropertyGrid1";
-            this.stNodePropertyGrid1.TitleColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             // 
             // NodeEditorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1487, 722);
-            this.Controls.Add(this.stNodePropertyGrid1);
+            this.ClientSize = new System.Drawing.Size(1566, 867);
             this.Controls.Add(this.stNodeEditorPannel1);
-            this.Controls.Add(this.stNodeEditor1);
             this.Name = "NodeEditorForm";
             this.Text = "NodeEditorForm";
             this.Load += new System.EventHandler(this.NodeEditorForm_Load);
@@ -92,9 +57,6 @@
         }
 
         #endregion
-
-        private ST.Library.UI.NodeEditor.STNodeEditor stNodeEditor1;
         private ST.Library.UI.NodeEditor.STNodeEditorPannel stNodeEditorPannel1;
-        private ST.Library.UI.NodeEditor.STNodePropertyGrid stNodePropertyGrid1;
     }
 }
