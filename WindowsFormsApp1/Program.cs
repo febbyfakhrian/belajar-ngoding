@@ -53,7 +53,7 @@ namespace AutoInspectionPlatform
                 }
 
                 // 3. Start UI
-                Application.Run(new LoginForm(provider, connectionString));
+                Application.Run(new MainDashboard(provider));
             }
             catch (Exception ex)
             {

@@ -35,9 +35,9 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.bigLabel1 = new ReaLTaiizor.Controls.BigLabel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.metroTextBox2 = new ReaLTaiizor.Controls.MetroTextBox();
             this.moonLabel2 = new ReaLTaiizor.Controls.MoonLabel();
             this.metroTextBox1 = new ReaLTaiizor.Controls.MetroTextBox();
-            this.metroTextBox2 = new ReaLTaiizor.Controls.MetroTextBox();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
@@ -153,6 +153,37 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(437, 205);
             this.tableLayoutPanel1.TabIndex = 1;
             // 
+            // metroTextBox2
+            // 
+            this.metroTextBox2.AutoCompleteCustomSource = null;
+            this.metroTextBox2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
+            this.metroTextBox2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
+            this.metroTextBox2.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.metroTextBox2.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
+            this.metroTextBox2.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
+            this.metroTextBox2.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
+            this.metroTextBox2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.metroTextBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.metroTextBox2.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.metroTextBox2.Image = null;
+            this.metroTextBox2.IsDerivedStyle = true;
+            this.metroTextBox2.Lines = null;
+            this.metroTextBox2.Location = new System.Drawing.Point(3, 124);
+            this.metroTextBox2.MaxLength = 100;
+            this.metroTextBox2.Multiline = false;
+            this.metroTextBox2.Name = "metroTextBox2";
+            this.metroTextBox2.ReadOnly = false;
+            this.metroTextBox2.Size = new System.Drawing.Size(431, 36);
+            this.metroTextBox2.Style = ReaLTaiizor.Enum.Metro.Style.Light;
+            this.metroTextBox2.StyleManager = null;
+            this.metroTextBox2.TabIndex = 11;
+            this.metroTextBox2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.metroTextBox2.ThemeAuthor = "Taiizor";
+            this.metroTextBox2.ThemeName = "MetroLight";
+            this.metroTextBox2.UseSystemPasswordChar = true;
+            this.metroTextBox2.WatermarkText = "";
+            this.metroTextBox2.KeyDown += new System.Windows.Forms.KeyEventHandler(this.passwordTextBox_KeyDown);
+            // 
             // moonLabel2
             // 
             this.moonLabel2.Anchor = System.Windows.Forms.AnchorStyles.Left;
@@ -193,36 +224,6 @@
             this.metroTextBox1.ThemeName = "MetroLight";
             this.metroTextBox1.UseSystemPasswordChar = false;
             this.metroTextBox1.WatermarkText = "";
-            // 
-            // metroTextBox2
-            // 
-            this.metroTextBox2.AutoCompleteCustomSource = null;
-            this.metroTextBox2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.None;
-            this.metroTextBox2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.None;
-            this.metroTextBox2.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.metroTextBox2.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
-            this.metroTextBox2.DisabledBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(155)))), ((int)(((byte)(155)))), ((int)(((byte)(155)))));
-            this.metroTextBox2.DisabledForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(136)))), ((int)(((byte)(136)))), ((int)(((byte)(136)))));
-            this.metroTextBox2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.metroTextBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.metroTextBox2.HoverColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
-            this.metroTextBox2.Image = null;
-            this.metroTextBox2.IsDerivedStyle = true;
-            this.metroTextBox2.Lines = null;
-            this.metroTextBox2.Location = new System.Drawing.Point(3, 124);
-            this.metroTextBox2.MaxLength = 100;
-            this.metroTextBox2.Multiline = false;
-            this.metroTextBox2.Name = "metroTextBox2";
-            this.metroTextBox2.ReadOnly = false;
-            this.metroTextBox2.Size = new System.Drawing.Size(431, 36);
-            this.metroTextBox2.Style = ReaLTaiizor.Enum.Metro.Style.Light;
-            this.metroTextBox2.StyleManager = null;
-            this.metroTextBox2.TabIndex = 11;
-            this.metroTextBox2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.metroTextBox2.ThemeAuthor = "Taiizor";
-            this.metroTextBox2.ThemeName = "MetroLight";
-            this.metroTextBox2.UseSystemPasswordChar = true;
-            this.metroTextBox2.WatermarkText = "";
             // 
             // LoginForm
             // 

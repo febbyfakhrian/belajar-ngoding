@@ -22,8 +22,8 @@ namespace WindowsFormsApp1
 
         private void foreverButton1_Click(object sender, EventArgs e)
         {
-            var dashboard = new MainDashboard(_provider);
-            dashboard.Show();
+            //var dashboard = new MainDashboard(_provider);
+            //dashboard.Show();
             var sqliteConnection = new SQLiteConnection(_connectionString);
             sqliteConnection.Open();
             using (var cmd = sqliteConnection.CreateCommand())
@@ -39,14 +39,48 @@ namespace WindowsFormsApp1
                         // Successful login
                         sqliteConnection.Close();
                         this.Hide();
-                        //var dashboard = new MainDashboard(_provider);
-                        //dashboard.Show();
+                        var dashboard = new MainDashboard(_provider);
+                        dashboard.Show();
                     }
                     else
                     {
                         MessageBox.Show("Invalid badge number or password.");
                     }
                 }
+            }
+        }
+
+        private void passwordTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            MessageBox.Show("dsfdsf");
+            if (e.KeyCode == Keys.Enter)
+            {
+                // Aksi yang ingin dijalankan ketika tombol Enter ditekan
+                var sqliteConnection = new SQLiteConnection(_connectionString);
+                sqliteConnection.Open();
+                using (var cmd = sqliteConnection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT id, badge_number, password FROM users WHERE badge_number = @BadgeNumber AND password = @Password LIMIT 1;";
+                    cmd.Parameters.AddWithValue("@BadgeNumber", metroTextBox1.Text);
+                    cmd.Parameters.AddWithValue("@Password", metroTextBox2.Text);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            // Successful login
+                            sqliteConnection.Close();
+                            this.Hide();
+                            var dashboard = new MainDashboard(_provider);
+                            dashboard.Show();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Invalid badge number or password.");
+                        }
+                    }
+                }
+                e.SuppressKeyPress = true; // Mencegah bunyi 'ding' default
             }
         }
     }

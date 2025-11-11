@@ -27,7 +27,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
         public GrpcService(ISettingsService settingsService)
         {
             // Try to get the gRPC server URL from settings
-            string host = "localhost:50052"; // Default fallback
+            string host = "localhost:5050"; // Default fallback
             
             if (settingsService != null)
             {

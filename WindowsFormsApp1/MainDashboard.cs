@@ -517,72 +517,79 @@ namespace WindowsFormsApp1
 
         private async void OpenCamera_Click(object sender, EventArgs e)
         {
-            string isUsedPlc = _settingsService.GetSetting<string>("plc", "is_used");
-            string configWorkflowPath = _settingsService.GetSetting<string>("workflow", "config_path");
-
-            if(string.IsNullOrEmpty(configWorkflowPath) || !File.Exists(configWorkflowPath))
+            if (isDebug.Checked)
             {
-                ShowErrorMsg("Set workflow config path first", 0);
-                return;
-            }
 
-             //Check if PLC is connected before allowing camera operations
-            if (!string.IsNullOrEmpty(isUsedPlc))
-            {
-                if ((_plc == null || !_plc.IsOpen) && bool.Parse(isUsedPlc))
-                {
-                    ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
-                    return;
-                }
             }
             else
             {
-                if (_plc == null || !_plc.IsOpen)
+                string isUsedPlc = _settingsService.GetSetting<string>("plc", "is_used");
+                string configWorkflowPath = _settingsService.GetSetting<string>("workflow", "config_path");
+
+                if (string.IsNullOrEmpty(configWorkflowPath) || !File.Exists(configWorkflowPath))
                 {
-                    ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                    ShowErrorMsg("Set workflow config path first", 0);
                     return;
                 }
-            }
 
-            // Check if GRPC is connected before allowing camera operations
-            if (_grpc == null)
-            {
-                ShowErrorMsg("GRPC service is not initialized. Please restart the application.", 0);
-                return;
-            }
-
-            // Use reflection to check if the client is connected
-            var clientField = typeof(GrpcService).GetField("_client", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (clientField != null)
-            {
-                var client = clientField.GetValue(_grpc);
-                if (client == null)
+                //Check if PLC is connected before allowing camera operations
+                if (!string.IsNullOrEmpty(isUsedPlc))
                 {
-                    ShowErrorMsg("GRPC is not connected. Please establish GRPC connection before opening camera.", 0);
+                    if ((_plc == null || !_plc.IsOpen) && bool.Parse(isUsedPlc))
+                    {
+                        ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                        return;
+                    }
+                }
+                else
+                {
+                    if (_plc == null || !_plc.IsOpen)
+                    {
+                        ShowErrorMsg("PLC is not connected. Please establish PLC connection before opening camera.", 0);
+                        return;
+                    }
+                }
+
+                // Check if GRPC is connected before allowing camera operations
+                if (_grpc == null)
+                {
+                    ShowErrorMsg("GRPC service is not initialized. Please restart the application.", 0);
                     return;
                 }
+
+                // Use reflection to check if the client is connected
+                //var clientField = typeof(GrpcService).GetField("_client", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                //if (clientField != null)
+                //{
+                //    var client = clientField.GetValue(_grpc);
+                //    if (client == null)
+                //    {
+                //        ShowErrorMsg("GRPC is not connected. Please establish GRPC connection before opening camera.", 0);
+                //        return;
+                //    }
+                //}
+
+                if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
+                {
+                    ShowErrorMsg("No device, please select", 0);
+                    return;
+                }
+
+                var device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(
+                    _deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
+                    typeof(MyCamera.MV_CC_DEVICE_INFO));
+
+                // Buka baru (handle fresh)
+                if (!_cam.Open(device))
+                {
+                    ShowErrorMsg("Failed to open device", 0);
+                    return;
+                }
+
+                // Restart DAG execution when starting camera
+                await RestartDagExecutionAsync(configWorkflowPath);
+
             }
-
-            if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
-            {
-                ShowErrorMsg("No device, please select", 0);
-                return;
-            }
-
-            var device = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(
-                _deviceList.pDeviceInfo[cbDeviceList.SelectedIndex],
-                typeof(MyCamera.MV_CC_DEVICE_INFO));
-
-            // Buka baru (handle fresh)
-            if (!_cam.Open(device))
-            {
-                ShowErrorMsg("Failed to open device", 0);
-                return;
-            }
-
-            // Restart DAG execution when starting camera
-            await RestartDagExecutionAsync(configWorkflowPath);
-
             btn_Grab.Enabled = true;
 
             _ctx.DisplayHandle = pictureBox5.Handle;   // di MainDashboard setelah handle tersedia

@@ -204,7 +204,6 @@
             this.setPhotoBtn.TabIndex = 7;
             this.setPhotoBtn.Text = "Set Photo";
             this.setPhotoBtn.TextAlignment = System.Drawing.StringAlignment.Center;
-            this.setPhotoBtn.Visible = false;
             this.setPhotoBtn.Click += new System.EventHandler(this.setPhotoBtn_Click);
             // 
             // DialogDebugMenuGrpc

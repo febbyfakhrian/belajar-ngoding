@@ -89,70 +89,34 @@ namespace WindowsFormsApp1
             }
         }
 
-        private async void sendImageDummyBtn_Click_1(object sender, EventArgs e)
+         private async void sendImageDummyBtn_Click_1(object sender, EventArgs e)
         {
             try
             {
-                // Generate 5 dummy images
-                //var dummyImages = Enumerable.Range(0, 5)
-                //                            .Select(_ => CreateDummyImage(1, 1)) // 1x1 pixel
-                //                            .ToList();
-
-                // Ambil gambar dari resource
-                Bitmap noImage = Properties.Resources.NoImage;
-
-                // Konversi Bitmap ke byte[]
                 byte[] imageBytes;
-                using (MemoryStream ms = new MemoryStream())
+
+                // Check if user has selected a photo
+                if (!string.IsNullOrEmpty(photoPath) && File.Exists(photoPath))
                 {
-                    noImage.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                    imageBytes = ms.ToArray();
+                    // Use the user-selected photo
+                    imageBytes = File.ReadAllBytes(photoPath);
+                }
+                else
+                {
+                    MessageBox.Show("No photo selected. Please select a photo to send.");
+                    return;
                 }
 
-                // Kirim ke gRPC (anggap ProcessImageStreamAsync menerima IEnumerable<byte[]>)
-                IEnumerable<byte[]> imageChunks = SplitBytes(imageBytes);
-
-                ImageResponse resp = await _grpc.ProcessImageStreamAsync(imageChunks);
-
-                // ---------------------------------------------
-                // Fungsi lokal untuk memecah byte[] menjadi chunk
-                IEnumerable<byte[]> SplitBytes(byte[] data, int chunkSize = 64 * 1024)
-                {
-                    for (int i = 0; i < data.Length; i += chunkSize)
-                    {
-                        int size = Math.Min(chunkSize, data.Length - i);
-                        byte[] chunk = new byte[size];
-                        Array.Copy(data, i, chunk, 0, size);
-                        yield return chunk;
-                    }
-                }
-
-
-                //Console.WriteLine($"Server responded: {resp}");
+                // Send to gRPC directly without chunking
+                ImageResponse resp = await _grpc.ProcessImageAsync(imageBytes);
 
                 Console.WriteLine("=== DEBUG ===");
-                //Console.WriteLine("resp.Result:");
-                //Console.WriteLine(resp.Result);
                 this.apiResponse = resp;
-
-                //ApiResponse apiResponse = JsonConvert.DeserializeObject<ApiResponse>(resp.Result);
-                //Console.WriteLine("apiResponse.Result:");
-                //Console.WriteLine(apiResponse.Result);
-                //foreach (var item in apiResponse.Result.F)
-                //{
-                //    Console.WriteLine("Fiducial boxes: " + string.Join(", ", item.Boxes));
-                //    Console.WriteLine("Score: " + item.Score);
-                //    Console.WriteLine("Label: " + item.Label);
-                //}
-
-                ////Root data = JsonConvert.DeserializeObject<Root>(apiResponse.Result);
-                ////Console.WriteLine("Deserialized data:");
-                ////Console.WriteLine(JsonConvert.SerializeObject(data, Formatting.Indented));
 
                 // Show success/failure info
                 MessageBox.Show(this,
-                    $"Dummy images sent successfully.\r\nServer Response:\r\n{resp}",
-                    "Send Dummy Image",
+                    $"Image sent successfully.\r\nServer Response:\r\n{resp}",
+                    "Send Image",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
@@ -160,8 +124,8 @@ namespace WindowsFormsApp1
             {
                 // Show error dialog if something went wrong
                 MessageBox.Show(this,
-                    $"Failed to send dummy images:\r\n{ex.Message}",
-                    "Send Dummy Image",
+                    $"Failed to send image:\r\n{ex.Message}",
+                    "Send Image",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
