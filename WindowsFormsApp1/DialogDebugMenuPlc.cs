@@ -28,6 +28,10 @@ namespace WindowsFormsApp1
         private StringBuilder rxBuffer = new StringBuilder();
         private int _lineStart = 0;   // posisi awal baris saat ini
 
+        // Add debounce fields
+        private DateTime _lastPlcCommandTime = DateTime.MinValue;
+        private readonly TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(200); // 200ms debounce
+
         public DialogDebugMenuPlc()
         {
             InitializeComponent();
@@ -89,6 +93,15 @@ namespace WindowsFormsApp1
 
         private async void testPlcReadBtn_Click(object sender, EventArgs e)
         {
+            // Debounce mechanism to prevent multiple rapid clicks
+            var now = DateTime.UtcNow;
+            if (now - _lastPlcCommandTime < _debounceInterval)
+            {
+                Console.WriteLine($"[PLC] Command ignored due to debounce at {now:HH:mm:ss.fff}");
+                return;
+            }
+            _lastPlcCommandTime = now;
+
             try
             {
                 if (!serial.IsOpen)
@@ -152,7 +165,7 @@ namespace WindowsFormsApp1
             {
                 // 1. Baca semua data yang datang
                 string chunk = serial.ReadExisting();
-                Console.WriteLine(chunk);
+                //Console.WriteLine(chunk); // Remove this line to prevent console spam
                 if (string.IsNullOrEmpty(chunk)) return;
 
                 lock (rxBuffer) rxBuffer.Append(chunk);
@@ -161,6 +174,9 @@ namespace WindowsFormsApp1
                 string buffered = rxBuffer.ToString();
                 int current = 0;
                 int len = buffered.Length;
+                
+                // Track processed lines to prevent duplicate processing
+                var processedLines = new List<string>();
 
                 while (current < len)
                 {
@@ -171,7 +187,12 @@ namespace WindowsFormsApp1
                         if (lineLen > 0)
                         {
                             string line = buffered.Substring(_lineStart, lineLen).Trim();
-                            ProcessCompleteLine(line);
+                            // Only process each line once
+                            if (!processedLines.Contains(line))
+                            {
+                                processedLines.Add(line);
+                                ProcessCompleteLine(line);
+                            }
                         }
                         current++;               // skip '\r' atau '\n'
                         _lineStart = current;    // mark posisi baru
@@ -183,14 +204,31 @@ namespace WindowsFormsApp1
                 }
 
                 int finalLen = current - _lineStart;
-                if (finalLen > 0) ProcessCompleteLine(buffered.Substring(_lineStart, finalLen).Trim());
+                if (finalLen > 0) 
+                {
+                    string finalLine = buffered.Substring(_lineStart, finalLen).Trim();
+                    // Only process each line once
+                    if (!processedLines.Contains(finalLine))
+                    {
+                        processedLines.Add(finalLine);
+                        ProcessCompleteLine(finalLine);
+                    }
+                }
 
                 // 3. Sisa yang belum selesai
                 lock (rxBuffer)
                 {
-                    rxBuffer.Clear();
+                    // Only keep unprocessed data
                     if (_lineStart < len)
-                        rxBuffer.Append(buffered, _lineStart, len - _lineStart);
+                    {
+                        string remaining = buffered.Substring(_lineStart);
+                        rxBuffer.Clear();
+                        rxBuffer.Append(remaining);
+                    }
+                    else
+                    {
+                        rxBuffer.Clear();
+                    }
                 }
 
                 _lineStart = 0;   // reset untuk next event
@@ -289,7 +327,7 @@ namespace WindowsFormsApp1
             string filePath = Path.Combine(folder, $"CycleTime_{DateTime.Now:yyyyMMdd_HHmmss}.json");
             File.WriteAllText(filePath, json);
 
-            Console.WriteLine($"📁 File hasil disimpan ke: {filePath}");
+            Console.WriteLine($"File hasil disimpan ke: {filePath}");
         }
 
 
@@ -315,8 +353,8 @@ namespace WindowsFormsApp1
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ Gagal mengirim data ke PLC: {ex.Message}");
-                Console.WriteLine($"❌ Gagal mengirim data ke PLC: {ex.Message}");
+                MessageBox.Show($"Gagal mengirim data ke PLC: {ex.Message}");
+                Console.WriteLine($"Gagal mengirim data ke PLC: {ex.Message}");
             }
         }
 
@@ -346,12 +384,12 @@ namespace WindowsFormsApp1
 
                 if (waitingResponse)
                 {
-                    Console.WriteLine($"⚠️ Timeout ({label}) setelah {timeoutMs} ms");
+                    Console.WriteLine($"Timeout ({label}) setelah {timeoutMs} ms");
                     waitingResponse = false;
                 }
                 else
                 {
-                    Console.WriteLine($"✅ Respons {label} diterima dalam {elapsed:F2} ms: {plcResponse}");
+                    Console.WriteLine($"Respons {label} diterima dalam {elapsed:F2} ms: {plcResponse}");
                 }
 
                 // Simpan log ke JSON

@@ -23,6 +23,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
         private readonly Stopwatch _cycleStopwatch = new Stopwatch();
         private bool _waitingResponse;
         private readonly InspectionLogger _logger = new InspectionLogger();
+        private readonly object _bufferLock = new object(); // Add lock for thread safety
 
         public event Action<string> LineReceived;
         public event Action<double> CycleMeasured;
@@ -40,7 +41,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
 
         private void InitializeSerial(string portName, int baudRate, int dataBits, Parity parity, StopBits stopBits)
         {
-            _configuredPortName = portName; // <— simpan
+            _configuredPortName = portName;
             _serial = new SerialPortStream(portName, baudRate, dataBits, parity, stopBits)
             {
                 NewLine = "\r",
@@ -100,7 +101,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
 
             if (!_serial.IsOpen)
             {
-                //_serial.Open();
+                _serial.Open();
                 _ = Task.Run(ReadPumpAsync); // polling tanpa event
             }
         }
@@ -202,58 +203,54 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
             if (string.IsNullOrEmpty(chunk)) return;
             Debug.WriteLine($"[PLC] Received chunk: {chunk}");
 
-            lock (_rxBuffer) _rxBuffer.Append(chunk);
-
-            string buffered;
-            lock (_rxBuffer) buffered = _rxBuffer.ToString();
-            Debug.WriteLine($"[PLC] Buffer content: {buffered}");
-
-            int lineEnd;
-            
-            // Process complete lines (terminated with \r, \n, or \r\n)
-            while ((lineEnd = buffered.IndexOfAny(new[] { '\r', '\n' }, _lineStart)) >= 0)
+            lock (_bufferLock) // Thread-safe access to buffer
             {
-                int len = lineEnd - _lineStart;
+                _rxBuffer.Append(chunk);
 
-                // Skip \r\n as a unit, otherwise skip 1 character
-                int skip = 1;
-                if (lineEnd + 1 < buffered.Length &&
-                    buffered[lineEnd] == '\r' && buffered[lineEnd + 1] == '\n')
-                {
-                    skip = 2;
-                }
+                string buffered = _rxBuffer.ToString();
+                Debug.WriteLine($"[PLC] Buffer content: {buffered}");
 
-                string line = buffered.Substring(_lineStart, len).Trim();
-                _lineStart = lineEnd + skip;
+                int lineEnd;
+                var processedLines = new List<string>(); // Track processed lines to avoid duplicates
                 
-                Debug.WriteLine($"[PLC] Processing complete line: {line}");
-
-                if (!string.IsNullOrWhiteSpace(line))
+                // Process complete lines (terminated with \r, \n, or \r\n)
+                while ((lineEnd = buffered.IndexOfAny(new[] { '\r', '\n' }, _lineStart)) >= 0)
                 {
-                    LineReceived?.Invoke(line);
-                    _waitingResponse = false;
-                }
-            }
+                    int len = lineEnd - _lineStart;
 
-            // ---------- 2.  compact buffer ----------
-            // Remove processed lines from buffer to prevent reprocessing
-            if (_lineStart > 0)
-            {
-                // Check if there's any remaining unprocessed data
-                lock (_rxBuffer)
-                {
-                    if (_lineStart < _rxBuffer.Length)
+                    // Skip \r\n as a unit, otherwise skip 1 character
+                    int skip = 1;
+                    if (lineEnd + 1 < buffered.Length &&
+                        buffered[lineEnd] == '\r' && buffered[lineEnd + 1] == '\n')
                     {
-                        string remaining = _rxBuffer.ToString(_lineStart, _rxBuffer.Length - _lineStart);
-                        if (!string.IsNullOrWhiteSpace(remaining))
+                        skip = 2;
+                    }
+
+                    string line = buffered.Substring(_lineStart, len).Trim();
+                    _lineStart = lineEnd + skip;
+                    
+                    Debug.WriteLine($"[PLC] Processing complete line: {line}");
+
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        // Only process each line once
+                        if (!processedLines.Contains(line))
                         {
-                            Debug.WriteLine($"[PLC] Remaining unprocessed data: {remaining}");
+                            processedLines.Add(line);
+                            Debug.WriteLine($"[PLC] Line received: {line}");
+                            LineReceived?.Invoke(line);
+                            _waitingResponse = false;
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"[PLC] Duplicate line skipped: {line}");
                         }
                     }
                 }
-                
-                Debug.WriteLine($"[PLC] Compacting buffer, removing {_lineStart} characters");
-                lock (_rxBuffer)
+
+                // ---------- 2.  compact buffer ----------
+                // Remove processed lines from buffer to prevent reprocessing
+                if (_lineStart > 0)
                 {
                     // Compact the buffer to remove processed data
                     if (_lineStart < _rxBuffer.Length)
@@ -266,11 +263,8 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
                     }
                     _lineStart = 0;
                 }
-            }
 
-            // ---------- 3.  buffer overflow protection ----------
-            lock (_rxBuffer)
-            {
+                // ---------- 3.  buffer overflow protection ----------
                 if (_rxBuffer.Length > 8192)
                 {
                     Debug.WriteLine($"[PLC] Warning: RX buffer size is {_rxBuffer.Length} characters, clearing...");

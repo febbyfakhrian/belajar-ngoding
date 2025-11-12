@@ -11,7 +11,7 @@ namespace WindowsFormsApp1
 {
     public partial class GRPCDialog : Form
     {
-        private GrpcService _grpcService;
+        private GrpcService _grpcService = new GrpcService();
         private readonly IServiceProvider _serviceProvider;
         private readonly ISettingsService _settingsService; // Made readonly
 
@@ -311,7 +311,38 @@ namespace WindowsFormsApp1
                             MessageBoxIcon.Warning);
                         return;
                     }
-
+                    
+                    // Ensure GRPC service is initialized and connected before calling UpdateConfigAsync
+                    if (_grpcService == null)
+                    {
+                        // Get the URL from the textbox
+                        string grpcUrl = urlHostGrpcTextBox.Text.Trim();
+                        
+                        // Create new GRPC service with a mock settings service that provides the URL
+                        var mockSettings = new MockGrpcSettingsService(grpcUrl);
+                        _grpcService = new GrpcService(mockSettings);
+                    }
+                    
+                    // Check if the service is already connected by checking if _client is set
+                    // We need to use reflection to access the private _client field
+                    var clientField = typeof(GrpcService).GetField("_client", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var client = clientField?.GetValue(_grpcService);
+                    
+                    // If not connected, try to connect
+                    if (client == null)
+                    {
+                        bool isConnected = await _grpcService.StartAsync();
+                        if (!isConnected)
+                        {
+                            MessageBox.Show(this,
+                                "Failed to connect to GRPC server. Please check your connection settings.",
+                                "Update Config",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                    
                     // Kirim file ke gRPC
                     var resp = await _grpcService.UpdateConfigAsync(path);
 

@@ -1,4 +1,4 @@
-﻿using AutoInspectionPlatform;
+using AutoInspectionPlatform;
 using PLCCommunication;
 using System;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.Ports;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using WindowsFormsApp1.Core.Entities.Models;
 using WindowsFormsApp1.Infrastructure.Hardware.PLC;
@@ -18,13 +19,21 @@ namespace WindowsFormsApp1
 {
     public partial class PlcDialog : Form
     {
+        // Add debounce fields
+        private DateTime _lastPlcCommandTime = DateTime.MinValue;
+        private readonly TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(200); // 200ms debounce
+        
         private SerialPort serial;
-        private Stopwatch cycleStopwatch = new Stopwatch();
         private bool waitingResponse = false;
+        private readonly StringBuilder rxBuffer = new StringBuilder();
+        private int _lineStart = 0;
+        private readonly InspectionLogger logger = new InspectionLogger();
+        private readonly Stopwatch cycleStopwatch = new Stopwatch();
         private bool testRunning = false;
-        private List<double> cycleTimes = new List<double>();
-        private InspectionLogger logger = new InspectionLogger(); // bisa diinisialisasi global/form
-        private int _lineStart = 0;   // posisi awal baris saat ini
+        private readonly List<double> cycleTimes = new List<double>();
+        private int loopCount = 0;
+        private int totalLoops = 20;
+
         private readonly IServiceProvider _serviceProvider;
         private IPlcService _plcService;
         private readonly ISettingsService _settingsService; // Made readonly
@@ -73,9 +82,19 @@ namespace WindowsFormsApp1
            
         private void LoadComPorts()
         {
+            // Ambil semua COM port yang tersedia di sistem
+            string[] ports = SerialPort.GetPortNames();
+
+            // Bersihkan isi combo box dulu
             comboBoxDevices.Items.Clear();
-            comboBoxDevices.Items.AddRange(SerialPort.GetPortNames());
-            
+
+            // Masukkan semua port ke combobox
+            foreach (string port in ports)
+            {
+                comboBoxDevices.Items.Add(port);
+            }
+
+            // Pilih otomatis port pertama (kalau ada)
             if (comboBoxDevices.Items.Count > 0)
                 comboBoxDevices.SelectedIndex = 0;
             else
@@ -84,8 +103,18 @@ namespace WindowsFormsApp1
 
         private void comboBoxDevices_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // TIDAK buka port di sini – cukup simpan nama
-            Console.WriteLine($"[INFO] Port dipilih: {comboBoxDevices.SelectedItem}");
+            string selectedPort = comboBoxDevices.SelectedItem.ToString();
+
+            // Tutup port lama dulu kalau sedang terbuka
+            if (serial != null && serial.IsOpen)
+            {
+                serial.Close();
+            }
+
+            // Buat ulang instance SerialPort sesuai pilihan user
+            serial = new SerialPort(selectedPort, 9600, Parity.None, 8, StopBits.One);
+
+            Console.WriteLine($"[INFO] Serial port diset ke: {selectedPort}");
         }
 
         private void ProcessCompleteLine(string line)
@@ -109,6 +138,15 @@ namespace WindowsFormsApp1
 
         private void button1_Click(object sender, EventArgs e)
         {
+            // Debounce mechanism to prevent multiple rapid clicks
+            var now = DateTime.UtcNow;
+            if (now - _lastPlcCommandTime < _debounceInterval)
+            {
+                Console.WriteLine($"[PLC] Command ignored due to debounce at {now:HH:mm:ss.fff}");
+                return;
+            }
+            _lastPlcCommandTime = now;
+
             try
             {
                 // Mulai stopwatch
@@ -118,6 +156,7 @@ namespace WindowsFormsApp1
                 // Kirim perintah PLC (misal)
                 byte[] command = WritePLCAddress.READ;
                 serial.Write(command, 0, command.Length);
+                Console.WriteLine($"[{startTime:HH:mm:ss.fff}] Kirim READ ke PLC...");
 
                 // Tunggu respons PLC (misal blocking read atau event)
                 string response = serial.ReadLine(); // atau dapat dari Serial_DataReceived
@@ -125,6 +164,8 @@ namespace WindowsFormsApp1
 
                 // Stop timer
                 double cycleTimeMs = CycleTimer.Stop();
+                Console.WriteLine($"[{endTime:HH:mm:ss.fff}] Respons PLC: {response}");
+                Console.WriteLine($"Cycle time final: {cycleTimeMs:F2} ms");
 
                 // Tambahkan log ke InspectionLogger
                 var result = new InspectionResult
@@ -184,9 +225,18 @@ namespace WindowsFormsApp1
         // ==========================================================
         private void PlcCommandButton_Click(object sender, EventArgs e)
         {
+            // Debounce mechanism to prevent multiple rapid clicks
+            var now = DateTime.UtcNow;
+            if (now - _lastPlcCommandTime < _debounceInterval)
+            {
+                Console.WriteLine($"[PLC] Command ignored due to debounce at {now:HH:mm:ss.fff}");
+                return;
+            }
+            _lastPlcCommandTime = now;
+
             try
             {
-                var button = sender as Button;
+                Button button = sender as Button;
                 if (button == null) return;
 
                 string tag = button.Tag?.ToString();
@@ -214,15 +264,13 @@ namespace WindowsFormsApp1
 
                 byte[] command = (byte[])field.GetValue(null);
 
-                // Get the PLC service from DI
-                var plcService = GetPlcService();
-                if (plcService == null || !plcService.IsOpen)
+                if (!serial.IsOpen)
                 {
                     MessageBox.Show("Serial port belum dibuka!");
                     return;
                 }
 
-                plcService.SendCommandAsync(command).Wait(); // Blocking call for simplicity
+                serial.Write(command, 0, command.Length);
                 Console.WriteLine($"[PLC] Sent {className}.{fieldName} → {Encoding.ASCII.GetString(command)}");
             }
             catch (Exception ex)
@@ -238,102 +286,161 @@ namespace WindowsFormsApp1
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(baudRateTextBox.Text))
+                if (string.IsNullOrEmpty(baudRateTextBox.Text))
                 {
-                    MessageBox.Show("Masukkan baud rate!");
+                    MessageBox.Show("Please input baud rate");
                     return;
                 }
-
-                string portName = comboBoxDevices.SelectedItem?.ToString();
-                if (string.IsNullOrWhiteSpace(portName))
+                if (!serial.IsOpen)
                 {
-                    MessageBox.Show("Pilih port terlebih dahulu!");
-                    return;
-                }
+                    serial.PortName = comboBoxDevices.SelectedItem.ToString();
+                    serial.BaudRate = Int32.Parse(baudRateTextBox.Text);
+                    serial.Parity = Parity.None;
+                    serial.DataBits = 8;
+                    serial.StopBits = StopBits.One;
+                    serial.ReadBufferSize = 1024;
+                    serial.WriteBufferSize = 1024;
+                    serial.NewLine = "\r";          // atau "\r\n" sesuai PLC
+                    serial.Encoding = Encoding.ASCII;
 
-                // Get the PLC service from DI
-                var plcService = GetPlcService();
-                if (plcService == null)
-                {
-                    MessageBox.Show("PLC service tidak tersedia!");
-                    return;
-                }
+                    serial.Open();
 
-                // If it's a PlcOperation instance, we can configure it
-                if (plcService is PlcOperation plcOperation)
-                {
-                    plcOperation.SetConfig(portName, Int32.Parse(baudRateTextBox.Text));
-
-                    if (plcOperation.IsOpen)
-                    {
-                        plcOperation.Close();
-                    }
-
-                    // Buat instance baru (atau reuse) dan buka
-                    plcOperation.Open();
-
-                    // Save settings to database only after successful connection
-                    SavePlcSettingsToDatabase(portName, baudRateTextBox.Text);
+                    serial.DataReceived += Serial_DataReceived;
 
                     connectBtn.Text = "Disconnect";
                     comboBoxDevices.Enabled = false;
-                    MessageBox.Show($"Terkoneksi ke {portName}");
+                    MessageBox.Show($"Connected to {serial.PortName}");
                 }
                 else
                 {
-                    MessageBox.Show("PLC service tidak dapat dikonfigurasi!");
+                    serial.Close();
+                    connectBtn.Text = "Connect";
+                    comboBoxDevices.Enabled = true;
+                    MessageBox.Show("Disconnected.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                MessageBox.Show($"Serial error: {ex.Message}");
             }
         }
 
-        // Helper method to save PLC settings to the database
-        private void SavePlcSettingsToDatabase(string portName, string baudRate)
+        private void Serial_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                // Get the settings service from DI
-                var settingsService = _serviceProvider?.GetRequiredService<ISettingsService>();
-                if (settingsService != null)
+                // 1. Baca semua data yang datang
+                string chunk = serial.ReadExisting();
+                if (string.IsNullOrEmpty(chunk)) return;
+
+                lock (rxBuffer) rxBuffer.Append(chunk);
+
+                // 2. Cek apakah sudah ada baris utuh (CR/LF)
+                string buffered = rxBuffer.ToString();
+                int current = 0;
+                int len = buffered.Length;
+                
+                // Track processed lines to prevent duplicate processing
+                var processedLines = new List<string>();
+
+                while (current < len)
                 {
-                    // Save PLC port and baud rate to settings database
-                    settingsService.SetSetting("plc", "serial_port", portName);
-                    settingsService.SetSetting("plc", "baud_rate", baudRate);
-                    
-                    Console.WriteLine($"[PLC] Settings saved - Port: {portName}, Baud Rate: {baudRate}");
+                    char ch = buffered[current];
+                    if (ch == '\r' || ch == '\n')
+                    {
+                        int lineLen = current - _lineStart;
+                        if (lineLen > 0)
+                        {
+                            string line = buffered.Substring(_lineStart, lineLen).Trim();
+                            // Only process each line once
+                            if (!processedLines.Contains(line))
+                            {
+                                processedLines.Add(line);
+                                ProcessCompleteLine(line);
+                            }
+                        }
+                        current++;               // skip '\r' atau '\n'
+                        _lineStart = current;    // mark posisi baru
+                    }
+                    else
+                    {
+                        current++;
+                    }
                 }
-                else
+
+                int finalLen = current - _lineStart;
+                if (finalLen > 0) 
                 {
-                    Console.WriteLine("[PLC] Settings service not available, cannot save settings");
+                    string finalLine = buffered.Substring(_lineStart, finalLen).Trim();
+                    // Only process each line once
+                    if (!processedLines.Contains(finalLine))
+                    {
+                        processedLines.Add(finalLine);
+                        ProcessCompleteLine(finalLine);
+                    }
                 }
+
+                // 3. Sisa yang belum selesai
+                lock (rxBuffer)
+                {
+                    // Only keep unprocessed data
+                    if (_lineStart < len)
+                    {
+                        string remaining = buffered.Substring(_lineStart);
+                        rxBuffer.Clear();
+                        rxBuffer.Append(remaining);
+                    }
+                    else
+                    {
+                        rxBuffer.Clear();
+                    }
+                }
+
+                _lineStart = 0;   // reset untuk next event
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PLC] Error saving settings: {ex.Message}");
-                // We don't show an error message to the user here as the connection was successful
-                // We just log the error for debugging purposes
+                BeginInvoke(new Action(() =>
+                {
+                    string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                    plcLogBox.AppendText($"[{timestamp}] [ERROR] {ex.Message}\r\n");
+                    plcLogBox.SelectionStart = plcLogBox.Text.Length;
+                    plcLogBox.ScrollToCaret();
+                }));
             }
         }
 
         private void sendCommandBtn_Click(object sender, EventArgs e)
         {
-            // Get the PLC service from DI
-            var plcService = GetPlcService();
-            if (plcService == null || !plcService.IsOpen)
+            try
             {
-                MessageBox.Show("Port belum dibuka!");
-                return;
+                if (serial.IsOpen)
+                {
+                    string cmd = inputCommandPlc.Text.Trim();
+
+                    if (string.IsNullOrEmpty(cmd))
+                    {
+                        MessageBox.Show("Input command cannot be empty.");
+                        return;
+                    }
+
+                    // Banyak PLC butuh terminator seperti CR atau LF.
+                    // Sesuaikan dengan spesifikasi PLC kamu.
+                    string commandToSend = cmd + "\r";
+                    serial.Write(commandToSend);
+
+                    waitingResponse = true;
+                    Console.WriteLine($"[SEND] {cmd}");
+                }
+                else
+                {
+                    MessageBox.Show("Serial port not connected.");
+                }
             }
-
-            string cmd = inputCommandPlc.Text.Trim();
-            if (string.IsNullOrEmpty(cmd)) return;
-
-            // Tambah terminator sesuai PLC
-            byte[] data = Encoding.ASCII.GetBytes(cmd + "\r");
-            plcService.SendCommandAsync(data).Wait(); // Blocking call for simplicity
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Send error: {ex.Message}");
+            }
         }
         
         // Helper method to get the PLC service from DI
@@ -376,13 +483,10 @@ namespace WindowsFormsApp1
                 MessageBox.Show("PLC functionality has been disabled.", "PLC Status", 
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
-                // Get the PLC service and close any open connections
-                var plcService = GetPlcService();
-                if (plcService != null && plcService.IsOpen)
+                // Close any open connections
+                if (serial != null && serial.IsOpen)
                 {
-                    // Close the PLC connection asynchronously
-                    plcService.CloseAsync().Wait(); // Blocking call for simplicity in this context
-                    Console.WriteLine("[PLC] Connection closed due to disabled state");
+                    serial.Close();
                 }
                 
                 // Update UI to reflect disabled state
