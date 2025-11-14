@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -295,7 +295,8 @@ namespace WindowsFormsApp1.Core.Domain.Flow.Dag
                             {
                                 try
                                 {
-                                    bool v = (bool)ResolveExpression(kv.Value.ToString());
+                                    // Use EvaluateCondition which has access to the context
+                                    bool v = EvaluateCondition(kv.Value.ToString());
                                     _ctx.Conditions[kv.Key] = v;
                                 }
                                 catch (Exception ex)

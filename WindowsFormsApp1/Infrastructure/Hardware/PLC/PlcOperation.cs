@@ -100,7 +100,7 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.PLC
 
             if (!_serial.IsOpen)
             {
-                //_serial.Open();
+                _serial.Open();
                 _ = Task.Run(ReadPumpAsync); // polling tanpa event
             }
         }

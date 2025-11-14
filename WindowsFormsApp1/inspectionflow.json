@@ -79,6 +79,16 @@
       "name": "Cycle Time End",
       "type": "action",
       "parameters": { "actionKey": "CycleTimer.End" }
+    },
+    {
+      "id": "decision-node-id",
+      "name": "Decision Node",
+      "type": "condition",
+      "parameters": {
+        "conditions": {
+          "isPass": "Context.FinalLabel == true"
+        }
+      }
     }
   ],
   "connections": {
@@ -183,6 +193,17 @@
       "main": [
         [
           {
+            "node": "Decision Node",
+            "key": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision Node": {
+      "main": [
+        [
+          {
             "node": "PLC Send Pass",
             "key": "main",
             "index": 0
@@ -204,7 +225,7 @@
             "node": "Cycle Time End",
             "key": "main",
             "index": 0,
-            "when": "Context.FinalLabel == true"
+            "when": "Context.Conditions.isPass == true"
           }
         ]
       ]
@@ -216,7 +237,7 @@
             "node": "Cycle Time End",
             "key": "main",
             "index": 0,
-            "when": "Context.FinalLabel == false"
+            "when": "Context.Conditions.isPass == false"
           }
         ]
       ]

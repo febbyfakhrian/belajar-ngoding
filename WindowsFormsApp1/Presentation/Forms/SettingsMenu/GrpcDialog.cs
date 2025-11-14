@@ -135,33 +135,34 @@ namespace WindowsFormsApp1
                     return;
                 }
                 
-                // Dispose of existing service if any
-                if (_grpcService != null)
-                {
-                    _grpcService.Dispose();
-                    _grpcService = null;
-                }
-                
-                // Create new GRPC service with a mock settings service that provides the URL
+                // Create a temporary GRPC service for testing connection
                 var mockSettings = new MockGrpcSettingsService(grpcUrl);
-                _grpcService = new GrpcService(mockSettings);
+                var testService = new GrpcService(mockSettings);
                 
-                // Test the connection
-                bool isConnected = await _grpcService.StartAsync();
-                
-                if (isConnected)
+                try
                 {
-                    saveBtn.Enabled = true;
-                    updateConfigBtn.Enabled = true;
-                    MessageBox.Show($"Successfully connected to GRPC server at {grpcUrl}", "Connection Success", 
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Test the connection
+                    bool isConnected = await testService.StartAsync();
+                    
+                    if (isConnected)
+                    {
+                        saveBtn.Enabled = true;
+                        updateConfigBtn.Enabled = true;
+                        MessageBox.Show($"Successfully connected to GRPC server at {grpcUrl}", "Connection Success", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        saveBtn.Enabled = false;
+                        updateConfigBtn.Enabled = false;
+                        MessageBox.Show($"Failed to connect to GRPC server at {grpcUrl}", "Connection Failed", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
-                else
+                finally
                 {
-                    saveBtn.Enabled = false;
-                    updateConfigBtn.Enabled = false;
-                    MessageBox.Show($"Failed to connect to GRPC server at {grpcUrl}", "Connection Failed", 
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Clean up the test service
+                    testService.Dispose();
                 }
             }
             catch (Exception ex)
@@ -173,13 +174,6 @@ namespace WindowsFormsApp1
             {
                 // Re-enable the button
                 testConnectionBtn.Enabled = true;
-                
-                // Dispose of the service after testing
-                if (_grpcService != null)
-                {
-                    _grpcService.Dispose();
-                    _grpcService = null;
-                }
             }
         }
 
@@ -208,58 +202,58 @@ namespace WindowsFormsApp1
                     return;
                 }
                 
-                // Dispose of existing service if any
-                if (_grpcService != null)
+                // Save the GRPC URL to settings first
+                _settingsService.SetSetting("grpc", "server_url", grpcUrl);
+                
+                // Now reconnect the main gRPC service instance used by the application
+                IGrpcService mainGrpcService = null;
+                if (_serviceProvider != null)
                 {
-                    _grpcService.Dispose();
-                    _grpcService = null;
-                }
-                
-                // Create new GRPC service with a mock settings service that provides the URL
-                var mockSettings = new MockGrpcSettingsService(grpcUrl);
-                _grpcService = new GrpcService(mockSettings);
-                
-                // Test the connection
-                bool isConnected = await _grpcService.StartAsync();
-                
-                if (isConnected)
-                {
-                    // Connection successful, save settings to database
                     try
                     {
-                        // Save the GRPC URL
-                        _settingsService.SetSetting("grpc", "server_url", grpcUrl);
-                        
-                        MessageBox.Show($"GRPC settings saved successfully.\nURL: {grpcUrl}", "Save Success", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        mainGrpcService = _serviceProvider.GetRequiredService<IGrpcService>();
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error saving settings: {ex.Message}", "Save Error", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Console.WriteLine($"Error getting main gRPC service from provider: {ex.Message}");
+                    }
+                }
+                
+                if (mainGrpcService != null)
+                {
+                    // Stop the existing service
+                    await mainGrpcService.StopAsync();
+                    
+                    // Update the host and restart the service
+                    if (mainGrpcService is GrpcService grpcServiceInstance)
+                    {
+                        grpcServiceInstance.UpdateHost(grpcUrl);
+                    }
+                    
+                    // Try to start with new settings
+                    bool isConnected = await mainGrpcService.StartAsync();
+                    
+                    if (isConnected)
+                    {
+                        MessageBox.Show($"GRPC settings saved and connection established successfully.\nURL: {grpcUrl}", "Save Success", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"GRPC URL saved but connection failed.\nURL: {grpcUrl}\n\nPlease check your connection settings.", "Save Warning", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
                 else
                 {
-                    // Connection failed, but still save the URL and mark as disconnected
-                    try
-                    {
-                        // Save the GRPC URL
-                        _settingsService.SetSetting("grpc", "server_url", grpcUrl);
-                        
-                        MessageBox.Show($"GRPC URL saved but connection failed.\nURL: {grpcUrl}\n\nPlease check your connection settings.", "Save Warning", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error saving settings: {ex.Message}", "Save Error", 
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    // If we can't get the main service instance, show a message
+                    MessageBox.Show($"GRPC settings saved successfully.\nURL: {grpcUrl}", "Save Success", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error testing connection: {ex.Message}", "Connection Error", 
+                MessageBox.Show($"Error saving settings: {ex.Message}", "Save Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -267,13 +261,6 @@ namespace WindowsFormsApp1
                 // Re-enable the buttons
                 saveBtn.Enabled = true;
                 testConnectionBtn.Enabled = true;
-                
-                // Dispose of the service after operation
-                if (_grpcService != null)
-                {
-                    _grpcService.Dispose();
-                    _grpcService = null;
-                }
             }
         }
         
