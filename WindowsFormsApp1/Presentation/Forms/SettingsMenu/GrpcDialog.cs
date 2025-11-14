@@ -20,6 +20,10 @@ namespace WindowsFormsApp1
         {
             _serviceProvider = serviceProvider;
             _settingsService = settingsService ?? GetSettingsServiceFromProvider();
+            
+            // Initialize the gRPC service with the settings service
+            _grpcService = new GrpcService(_settingsService);
+            
             InitializeComponent();
             
             // Load saved settings if they exist
@@ -29,6 +33,8 @@ namespace WindowsFormsApp1
         // Legacy constructor for backward compatibility
         public GRPCDialog() : this(null, null)
         {
+            // Initialize the gRPC service with default settings
+            _grpcService = new GrpcService();
         }
 
         private ISettingsService GetSettingsServiceFromProvider()
@@ -300,6 +306,32 @@ namespace WindowsFormsApp1
                     }
 
                     // Kirim file ke gRPC
+                    // Ensure the gRPC service is connected before calling UpdateConfigAsync
+                    if (_grpcService == null)
+                    {
+                        MessageBox.Show(this,
+                            "gRPC service is not initialized.",
+                            "Update Config",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                        return;
+                    }
+                    
+                    // Try to connect if not already connected
+                    if (!_grpcService.IsConnected)
+                    {
+                        bool isConnected = await _grpcService.StartAsync();
+                        if (!isConnected)
+                        {
+                            MessageBox.Show(this,
+                                "Failed to connect to gRPC service.",
+                                "Update Config",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                    
                     var resp = await _grpcService.UpdateConfigAsync(path);
 
                     Console.WriteLine($"Status : {resp.Status}");
