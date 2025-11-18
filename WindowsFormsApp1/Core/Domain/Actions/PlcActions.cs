@@ -1,4 +1,4 @@
-﻿using PLCCommunication;
+﻿﻿﻿﻿using PLCCommunication;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -55,10 +55,35 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
-                LogInfo(ctx.FinalLabel.ToString());
-                LogInfo("Sending PASS command");
-                if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.PASS);
-                LogInfo("PASS command sent");
+                // Check if this action should execute based on the condition
+                // Default to "isPass" if not specified
+                string conditionName = "isPass";
+                
+                // Check if there's a parameter specifying the condition name
+                // This would be set in the workflow JSON if needed
+                if (ctx.Vars.TryGetValue("passConditionName", out object conditionNameObj) && conditionNameObj is string customName)
+                {
+                    conditionName = customName;
+                }
+                
+                // Check the condition value
+                bool shouldExecute = false;
+                if (ctx.Conditions.TryGetValue(conditionName, out bool conditionValue))
+                {
+                    shouldExecute = conditionValue;
+                }
+                
+                if (shouldExecute)
+                {
+                    LogInfo(ctx.FinalLabel.ToString());
+                    LogInfo("Sending PASS command");
+                    if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.PASS);
+                    LogInfo("PASS command sent");
+                }
+                else
+                {
+                    LogInfo($"Skipping PASS command because {conditionName} condition is false");
+                }
             }
             catch (Exception ex)
             {
@@ -78,10 +103,35 @@ namespace WindowsFormsApp1.Core.Domain.Actions
         {
             try
             {
-                LogInfo(ctx.FinalLabel.ToString());
-                LogInfo("Sending FAIL command");
-                if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.FAIL);
-                LogInfo("FAIL command sent");
+                // Check if this action should execute based on the condition
+                // Default to "isPass" if not specified
+                string conditionName = "isPass";
+                
+                // Check if there's a parameter specifying the condition name
+                // This would be set in the workflow JSON if needed
+                if (ctx.Vars.TryGetValue("failConditionName", out object conditionNameObj) && conditionNameObj is string customName)
+                {
+                    conditionName = customName;
+                }
+                
+                // Check the condition value (note: FAIL action executes when the condition is false)
+                bool shouldExecute = false;
+                if (ctx.Conditions.TryGetValue(conditionName, out bool conditionValue))
+                {
+                    shouldExecute = !conditionValue;
+                }
+                
+                if (shouldExecute)
+                {
+                    LogInfo(ctx.FinalLabel.ToString());
+                    LogInfo("Sending FAIL command");
+                    if (_plc?.IsOpen == true) await _plc.SendCommandAsync(WritePLCAddress.FAIL);
+                    LogInfo("FAIL command sent");
+                }
+                else
+                {
+                    LogInfo($"Skipping FAIL command because {conditionName} condition is true");
+                }
             }
             catch (Exception ex)
             {

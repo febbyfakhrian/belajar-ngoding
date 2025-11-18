@@ -18,9 +18,14 @@ namespace WindowsFormsApp1.Core.Interfaces
         event Action<string> BoxesReceived;
         
         /// <summary>
-        /// Event triggered when the gRPC connection is disconnected
+        /// Event triggered when the gRPC service is disconnected
         /// </summary>
         event Action OnDisconnected;
+        
+        /// <summary>
+        /// Gets a value indicating whether the gRPC service is connected
+        /// </summary>
+        bool IsConnected { get; }
         
         /// <summary>
         /// Starts the gRPC service asynchronously

@@ -556,18 +556,13 @@ namespace WindowsFormsApp1
                     ShowErrorMsg("GRPC service is not initialized. Please restart the application.", 0);
                     return;
                 }
-
-                // Use reflection to check if the client is connected
-                //var clientField = typeof(GrpcService).GetField("_client", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                //if (clientField != null)
-                //{
-                //    var client = clientField.GetValue(_grpc);
-                //    if (client == null)
-                //    {
-                //        ShowErrorMsg("GRPC is not connected. Please establish GRPC connection before opening camera.", 0);
-                //        return;
-                //    }
-                //}
+                
+                // Use the IsConnected property to check if the client is connected
+                if (!_grpc.IsConnected)
+                {
+                    ShowErrorMsg("GRPC is not connected. Please establish GRPC connection before opening camera.", 0);
+                    return;
+                }
 
                 if (_deviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
                 {
@@ -841,7 +836,7 @@ namespace WindowsFormsApp1
                     srcBmp = new Bitmap(ms);
 
                 Bitmap boxed = null;
-                var all = new List<int>();
+                var all = new List<double>();
                 foreach (var v in kv.Value)
                 {
                     if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);
@@ -1311,6 +1306,11 @@ namespace WindowsFormsApp1
                 dialog.StartPosition = FormStartPosition.CenterParent;
                 dialog.ShowDialog(this);
             }
+        }
+
+        private void materialButton1_Click(object sender, EventArgs e)
+        {
+            _ctx.Trigger = "PLC_READ_RECEIVED";
         }
     }
 }

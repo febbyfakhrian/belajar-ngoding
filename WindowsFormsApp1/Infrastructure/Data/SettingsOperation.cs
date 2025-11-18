@@ -78,7 +78,7 @@ namespace WindowsFormsApp1.Infrastructure.Data
                     value = excluded.value,
                     updated_at = CURRENT_TIMESTAMP;
             ";
-            
+
             using (var cmd = _connection.CreateCommand())
             {
                 cmd.CommandText = sql;

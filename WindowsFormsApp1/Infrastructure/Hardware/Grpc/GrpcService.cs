@@ -12,7 +12,8 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
 {
     public sealed class GrpcService : IGrpcService, IDisposable
     {
-        private readonly string _host;
+        private string _host;
+        private readonly ISettingsService _settingsService; // Store the settings service
         private Channel _channel;
         private AutoInspect.AutoInspectClient _client;
         private CancellationTokenSource _cts = new CancellationTokenSource();
@@ -22,10 +23,14 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
 
         public event Action<string> BoxesReceived;
         public event Action OnDisconnected;
+        
+        public bool IsConnected => _client != null && _channel != null && _channel.State == ChannelState.Ready;
 
         // Constructor that accepts ISettingsService and retrieves host from settings
         public GrpcService(ISettingsService settingsService)
         {
+            _settingsService = settingsService; // Store the settings service
+            
             // Try to get the gRPC server URL from settings
             string host = "localhost:5050"; // Default fallback
             
@@ -53,7 +58,16 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
         public GrpcService() : this(GetDefaultSettingsService())
         {
         }
-
+        
+        // Method to update the host setting
+        public void UpdateHost(string newHost)
+        {
+            if (!string.IsNullOrEmpty(newHost))
+            {
+                _host = newHost;
+            }
+        }
+        
         // Helper method to get a default settings service
         private static ISettingsService GetDefaultSettingsService()
         {
@@ -71,16 +85,38 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Grpc
 
         public async Task<bool> StartAsync()
         {
+            // If we already have a channel, we're already connected
             if (_channel != null) return true;
 
             try
             {
+                // Get the latest host setting from the settings service each time we start
+                string hostToUse = _host; // Default to the cached value
+                if (_settingsService != null)
+                {
+                    try
+                    {
+                        var savedHost = _settingsService.GetSetting<string>("grpc", "server_url");
+                        if (!string.IsNullOrEmpty(savedHost))
+                        {
+                            hostToUse = savedHost;
+                            // Update the cached host value
+                            _host = savedHost;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Grpc] Error retrieving settings: {ex.Message}");
+                        // Continue with the cached host value
+                    }
+                }
+                
                 var options = new List<ChannelOption>
                 {
                     new ChannelOption(ChannelOptions.MaxSendMessageLength, 100 * 1024 * 1024), // 100 MB
                     new ChannelOption(ChannelOptions.MaxReceiveMessageLength, 100 * 1024 * 1024)
                 };
-                _channel = new Channel(_host, ChannelCredentials.Insecure, options);
+                _channel = new Channel(hostToUse, ChannelCredentials.Insecure, options);
                 await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(5)); // Wait until channel is ready
                 _client = new AutoInspect.AutoInspectClient(_channel);
                 Console.WriteLine("[Grpc] Connection SUCCESS.");
