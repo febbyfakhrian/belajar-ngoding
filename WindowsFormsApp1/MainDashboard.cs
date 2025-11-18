@@ -836,7 +836,7 @@ namespace WindowsFormsApp1
                     srcBmp = new Bitmap(ms);
 
                 Bitmap boxed = null;
-                var all = new List<int>();
+                var all = new List<double>();
                 foreach (var v in kv.Value)
                 {
                     if (v.Boxes != null && v.Boxes.Count % 4 == 0) all.AddRange(v.Boxes);

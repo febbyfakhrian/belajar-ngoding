@@ -7,7 +7,7 @@ namespace WindowsFormsApp1.Core.Entities.Models
     public class ComponentItem
     {
         [JsonProperty("boxes")]
-        public List<int> Boxes { get; set; }
+        public List<double> Boxes { get; set; }
 
         [JsonProperty("score")]
         public double? Score { get; set; }

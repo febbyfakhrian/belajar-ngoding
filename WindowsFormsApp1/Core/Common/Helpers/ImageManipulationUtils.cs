@@ -77,7 +77,7 @@ namespace WindowsFormsApp1.Core.Common.Helpers
             return new string(buffer);
         }
 
-        public Bitmap DrawBoundingBoxMultiple(Bitmap src, List<int> boxes, Scalar? color = null, int strokeWidth = 5)
+        public Bitmap DrawBoundingBoxMultiple(Bitmap src, List<double> boxes, Scalar? color = null, int strokeWidth = 5)
         {
             if (src == null) throw new ArgumentNullException(nameof(src));
             if (boxes == null || boxes.Count % 4 != 0) return src;   // skip kalau tidak valid
@@ -91,10 +91,10 @@ namespace WindowsFormsApp1.Core.Common.Helpers
 
                 for (int i = 0; i < boxes.Count; i += 4)
                 {
-                    int x1 = Math.Max(0, boxes[i]);
-                    int y1 = Math.Max(0, boxes[i + 1]);
-                    int x2 = Math.Min(srcW, boxes[i + 2]);
-                    int y2 = Math.Min(srcH, boxes[i + 3]);
+                    int x1 = (int)Math.Max(0, boxes[i]);
+                    int y1 = (int)Math.Max(0, boxes[i + 1]);
+                    int x2 = (int)Math.Min(srcW, boxes[i + 2]);
+                    int y2 = (int)Math.Min(srcH, boxes[i + 3]);
 
                     int w = x2 - x1;
                     int h = y2 - y1;
@@ -113,7 +113,7 @@ namespace WindowsFormsApp1.Core.Common.Helpers
             }
         }
 
-        public Bitmap CropAndDrawBoundingBoxes(Bitmap src, List<int> boxes, Scalar? color = null, int strokeWidth = 5)
+        public Bitmap CropAndDrawBoundingBoxes(Bitmap src, List<double> boxes, Scalar? color = null, int strokeWidth = 5)
         {
             if (src == null) throw new ArgumentNullException(nameof(src));
             if (boxes == null || boxes.Count % 4 != 0) throw new ArgumentException("List boxes harus kelipatan 4 (x1, y1, x2, y2)");
@@ -125,10 +125,10 @@ namespace WindowsFormsApp1.Core.Common.Helpers
                 int srcW = mat.Width;
                 int srcH = mat.Height;
 
-                int x1 = Math.Max(0, boxes[0]);
-                int y1 = Math.Max(0, boxes[1]);
-                int x2 = Math.Min(srcW, boxes[2]);
-                int y2 = Math.Min(srcH, boxes[3]);
+                int x1 = (int)Math.Max(0, boxes[0]);
+                int y1 = (int)Math.Max(0, boxes[1]);
+                int x2 = (int)Math.Min(srcW, boxes[2]);
+                int y2 = (int)Math.Min(srcH, boxes[3]);
 
                 int w = x2 - x1;
                 int h = y2 - y1;
