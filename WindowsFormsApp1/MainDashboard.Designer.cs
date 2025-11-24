@@ -105,6 +105,7 @@
             this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gRPCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pLCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.button1 = new ReaLTaiizor.Controls.Button();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.pictureBox21 = new System.Windows.Forms.PictureBox();
@@ -992,7 +993,7 @@
             this.crownMenuStrip1.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
             this.crownMenuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
             this.crownMenuStrip1.ShowItemToolTips = true;
-            this.crownMenuStrip1.Size = new System.Drawing.Size(255, 24);
+            this.crownMenuStrip1.Size = new System.Drawing.Size(376, 24);
             this.crownMenuStrip1.TabIndex = 5;
             this.crownMenuStrip1.Text = "crownMenuStrip1";
             // 
@@ -1072,7 +1073,7 @@
             this.toolStripMenuItem2});
             this.toolsToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
             // 
             // toolStripMenuItem1
@@ -1102,7 +1103,8 @@
             this.debugToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.debugToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.gRPCToolStripMenuItem,
-            this.pLCToolStripMenuItem});
+            this.pLCToolStripMenuItem,
+            this.cameraToolStripMenuItem});
             this.debugToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.debugToolStripMenuItem.Name = "debugToolStripMenuItem";
             this.debugToolStripMenuItem.Size = new System.Drawing.Size(54, 20);
@@ -1111,16 +1113,23 @@
             // gRPCToolStripMenuItem
             // 
             this.gRPCToolStripMenuItem.Name = "gRPCToolStripMenuItem";
-            this.gRPCToolStripMenuItem.Size = new System.Drawing.Size(104, 22);
+            this.gRPCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.gRPCToolStripMenuItem.Text = "GRPC";
             this.gRPCToolStripMenuItem.Click += new System.EventHandler(this.gRPCToolStripMenuItem_Click);
             // 
             // pLCToolStripMenuItem
             // 
             this.pLCToolStripMenuItem.Name = "pLCToolStripMenuItem";
-            this.pLCToolStripMenuItem.Size = new System.Drawing.Size(104, 22);
+            this.pLCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.pLCToolStripMenuItem.Text = "PLC";
             this.pLCToolStripMenuItem.Click += new System.EventHandler(this.pLCToolStripMenuItem_Click);
+            // 
+            // cameraToolStripMenuItem
+            // 
+            this.cameraToolStripMenuItem.Name = "cameraToolStripMenuItem";
+            this.cameraToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.cameraToolStripMenuItem.Text = "Camera";
+            this.cameraToolStripMenuItem.Click += new System.EventHandler(this.cameraToolStripMenuItem_Click_1);
             // 
             // button1
             // 
@@ -1133,7 +1142,7 @@
             this.button1.Image = null;
             this.button1.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.button1.InactiveColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(34)))), ((int)(((byte)(37)))));
-            this.button1.Location = new System.Drawing.Point(258, 3);
+            this.button1.Location = new System.Drawing.Point(379, 3);
             this.button1.Name = "button1";
             this.button1.PressedBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
             this.button1.PressedColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(37)))), ((int)(((byte)(37)))));
@@ -1279,7 +1288,7 @@
             this.tableLayoutPanel3.ColumnCount = 3;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.94737F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.05263F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 272F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 275F));
             this.tableLayoutPanel3.Controls.Add(this.pictureBox2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.pictureBox3, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.tableLayoutPanel5, 2, 0);
@@ -1309,7 +1318,7 @@
             // 
             this.pictureBox3.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.pictureBox3.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox3.Image")));
-            this.pictureBox3.Location = new System.Drawing.Point(-23, 21);
+            this.pictureBox3.Location = new System.Drawing.Point(-24, 21);
             this.pictureBox3.Name = "pictureBox3";
             this.pictureBox3.Size = new System.Drawing.Size(1, 21);
             this.pictureBox3.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
@@ -1323,12 +1332,12 @@
             this.tableLayoutPanel5.Controls.Add(this.label12, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.label13, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(-45, 4);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(-48, 4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 41.07143F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 58.92857F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(266, 56);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(269, 56);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
             // label12
@@ -2083,6 +2092,7 @@
         private System.Windows.Forms.ToolStripMenuItem workflowToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem capturedFrameInspectionToolStripMenuItem;
         private MaterialSkin.Controls.MaterialButton materialButton1;
+        private System.Windows.Forms.ToolStripMenuItem cameraToolStripMenuItem;
     }
 }
 

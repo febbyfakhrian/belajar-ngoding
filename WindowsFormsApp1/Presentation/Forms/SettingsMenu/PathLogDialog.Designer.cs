@@ -94,7 +94,7 @@
             this.savePathBtn.BackColor = System.Drawing.Color.Transparent;
             this.savePathBtn.BaseColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(32)))), ((int)(((byte)(46)))));
             this.savePathBtn.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.savePathBtn.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.savePathBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.savePathBtn.Location = new System.Drawing.Point(293, 116);
             this.savePathBtn.Name = "savePathBtn";
             this.savePathBtn.Rounded = true;
@@ -125,11 +125,11 @@
             this.bigLabel1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.bigLabel1.AutoSize = true;
             this.bigLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.bigLabel1.Font = new System.Drawing.Font("Arial Rounded MT Bold", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.bigLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.bigLabel1.ForeColor = System.Drawing.Color.White;
-            this.bigLabel1.Location = new System.Drawing.Point(3, 2);
+            this.bigLabel1.Location = new System.Drawing.Point(3, 1);
             this.bigLabel1.Name = "bigLabel1";
-            this.bigLabel1.Size = new System.Drawing.Size(91, 22);
+            this.bigLabel1.Size = new System.Drawing.Size(84, 24);
             this.bigLabel1.TabIndex = 0;
             this.bigLabel1.Text = "Path Log";
             // 

@@ -104,11 +104,11 @@
             this.bigLabel1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.bigLabel1.AutoSize = true;
             this.bigLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.bigLabel1.Font = new System.Drawing.Font("Arial Rounded MT Bold", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.bigLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.bigLabel1.ForeColor = System.Drawing.Color.White;
             this.bigLabel1.Location = new System.Drawing.Point(3, 0);
             this.bigLabel1.Name = "bigLabel1";
-            this.bigLabel1.Size = new System.Drawing.Size(52, 21);
+            this.bigLabel1.Size = new System.Drawing.Size(51, 21);
             this.bigLabel1.TabIndex = 0;
             this.bigLabel1.Text = "MES";
             // 
@@ -226,7 +226,7 @@
             this.foreverButton1.BackColor = System.Drawing.Color.Transparent;
             this.foreverButton1.BaseColor = System.Drawing.Color.FromArgb(((int)(((byte)(205)))), ((int)(((byte)(32)))), ((int)(((byte)(46)))));
             this.foreverButton1.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.foreverButton1.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.foreverButton1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.foreverButton1.Location = new System.Drawing.Point(264, 142);
             this.foreverButton1.Name = "foreverButton1";
             this.foreverButton1.Rounded = true;

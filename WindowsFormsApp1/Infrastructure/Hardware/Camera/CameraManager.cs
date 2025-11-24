@@ -164,7 +164,6 @@ namespace WindowsFormsApp1.Infrastructure.Hardware.Camera
             lock (_disposeLock)
             {
                 if (_isClosing || _isClosed) return MV_ERROR;
-                Console.WriteLine(_deviceOpened);
                 if (!_deviceOpened) return MV_ERROR;
 
                 _grabbing = true;

@@ -83,6 +83,7 @@ namespace WindowsFormsApp1
                     {
                         connection.Open();
                     }
+                    this.Close();
                 }
                 else
                 {
