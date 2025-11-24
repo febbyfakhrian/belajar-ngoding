@@ -471,6 +471,12 @@
     <Compile Include="Core\Entities\Models\CycleTimeSummary.cs" />
     <Compile Include="Core\Entities\Models\InspectionResult.cs" />
     <Compile Include="Core\Entities\Models\Root.cs" />
+    <Compile Include="Presentation\Forms\CameraDebugForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Forms\CameraDebugForm.Designer.cs">
+      <DependentUpon>CameraDebugForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Presentation\Forms\Flow\DiagramConfigurationForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -556,6 +562,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="NodeEditorForm.resx">
       <DependentUpon>NodeEditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Forms\CameraDebugForm.resx">
+      <DependentUpon>CameraDebugForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Presentation\Forms\Flow\DiagramConfigurationForm.resx">
       <DependentUpon>DiagramConfigurationForm.cs</DependentUpon>

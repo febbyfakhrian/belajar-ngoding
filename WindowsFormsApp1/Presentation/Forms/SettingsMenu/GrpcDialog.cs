@@ -243,6 +243,7 @@ namespace WindowsFormsApp1
                     {
                         MessageBox.Show($"GRPC settings saved and connection established successfully.\nURL: {grpcUrl}", "Save Success", 
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        this.Close();
                     }
                     else
                     {

@@ -73,7 +73,7 @@ namespace WindowsFormsApp1
                     settingsService.SetSetting("workflow", "config_path", selectedFileConfigPath);
                     MessageBox.Show("Path konfigurasi berhasil disimpan.", "Sukses", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Console.WriteLine($"[Workflow] Config path saved: {selectedFileConfigPath}");
+                    this.Close();
                 }
                 else
                 {

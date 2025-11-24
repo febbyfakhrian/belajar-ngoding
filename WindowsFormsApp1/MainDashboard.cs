@@ -28,6 +28,7 @@ using WindowsFormsApp1.Core.Interfaces;
 using WindowsFormsApp1.Infrastructure.Di;
 using WindowsFormsApp1.Infrastructure.Data;
 using WindowsFormsApp1.Infrastructure.Services;
+using WindowsFormsApp1.Presentation.Forms;
 
 namespace WindowsFormsApp1
 {
@@ -334,27 +335,6 @@ namespace WindowsFormsApp1
 
         public Int32 NecessaryOperBeforeGrab()
         {
-            if (isDebug.Checked)
-            {
-                Console.WriteLine("[DEBUG] Skipping SDK read, using simulated parameters...");
-
-                UInt32 fakeWidth = 1920;
-                UInt32 fakeHeight = 1080;
-
-                _bitmapPixelFormat = PixelFormat.Format8bppIndexed;
-                _convertDstBufLen = fakeWidth * fakeHeight;
-                _convertDstBuf = Marshal.AllocHGlobal((Int32)_convertDstBufLen);
-                _bitmap = new Bitmap((Int32)fakeWidth, (Int32)fakeHeight, _bitmapPixelFormat);
-
-                // Apply grayscale palette
-                ColorPalette palette = _bitmap.Palette;
-                for (int i = 0; i < palette.Entries.Length; i++)
-                    palette.Entries[i] = Color.FromArgb(i, i, i);
-                _bitmap.Palette = palette;
-
-                Console.WriteLine($"[DEBUG] Fake buffer created {fakeWidth}x{fakeHeight}, Mono8");
-                return MyCamera.MV_OK;
-            }
             // ch:取图像宽 | en:Get Image Width
             MyCamera.MVCC_INTVALUE_EX stWidth = new MyCamera.MVCC_INTVALUE_EX();
             int nRet = _cam.GetIntValueEx("Width", ref stWidth);
@@ -519,7 +499,29 @@ namespace WindowsFormsApp1
         {
             if (isDebug.Checked)
             {
-
+                // Show CameraDebugForm to select image when in debug mode
+                using (var debugForm = new CameraDebugForm(_settingsService))
+                {
+                    if (debugForm.ShowDialog() == DialogResult.OK)
+                    {
+                        string imagePath = debugForm.SelectedImagePath;
+                        if (!string.IsNullOrEmpty(imagePath) && File.Exists(imagePath))
+                        {
+                            // Display the selected image
+                            DisplayDebugImage(imagePath);
+                        }
+                        else
+                        {
+                            ShowErrorMsg("No valid image selected for debug mode. Please select an image in the debug form.", 0);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // User cancelled the dialog
+                        return;
+                    }
+                }
             }
             else
             {
@@ -592,11 +594,18 @@ namespace WindowsFormsApp1
 
         private void btnStartGrab_Click(object sender, EventArgs e)
         {
-            int nRet = NecessaryOperBeforeGrab();
-            if (MyCamera.MV_OK != nRet)
-            {
-                ShowErrorMsg("Necessary operations before grab failed", nRet);
-                return;
+            int nRet = 0;
+            
+            if(isDebug.Checked){
+                // In debug mode, we don't need to perform camera operations
+                // The image is already displayed by DisplayDebugImage
+            }else{
+                nRet = NecessaryOperBeforeGrab();
+                if (MyCamera.MV_OK != nRet)
+                {
+                    ShowErrorMsg("Necessary operations before grab failed", nRet);
+                    return;
+                }
             }
 
             _grabbing = true;
@@ -607,13 +616,8 @@ namespace WindowsFormsApp1
             pictureBox5.Padding = new Padding(0);
             labelCameraInspection.Visible = false;
 
-            if (!isDebug.Checked)
-            {
-                //await Host.FireAsync("SignalRead");
-                //SubscribePlcSignal();
-            }
 
-            if (MyCamera.MV_OK != nRet)
+            if (MyCamera.MV_OK != nRet && !isDebug.Checked)
             {
                 //pictureBox5.Visible = true;
                 labelCameraInspection.Visible = true;
@@ -745,15 +749,59 @@ namespace WindowsFormsApp1
             // Persist & index
             string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string fileName = "frame_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + imageId + ".bmp";
-            //await _fileUtils.SaveFrameToDiskAsync(frameBytes, fileName, imageId);
+            await _fileUtils.SaveFrameToDiskAsync(frameBytes, fileName, imageId);
             //_imageDb.InsertImage(fileName, imageId);
 
             // Process via gRPC → render
             await _grpc.ProcessImageAsync(frameBytes, default(System.Threading.CancellationToken), imageId);
             if (GrpcResponseStore.LastResponse != null)
                 RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
+        }
 
-            if (!isDebug.Checked) MoveToFrame();
+        private async Task ProcessDebugImageAsync(string imagePath)
+        {
+            try
+            {
+                // Read the image file as bytes
+                byte[] imageBytes = File.ReadAllBytes(imagePath);
+
+                // Generate an image ID
+                string imageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+
+                // Process via gRPC → render
+                await _grpc.ProcessImageAsync(imageBytes, default(System.Threading.CancellationToken), imageId);
+                if (GrpcResponseStore.LastResponse != null)
+                    RenderComponentsUI(GrpcResponseStore.LastResponse.Result, flowLayoutPanel1);
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMsg($"Error processing debug image: {ex.Message}", 0);
+            }
+        }
+
+        private void DisplayDebugImage(string imagePath)
+        {
+            try
+            {
+                // Load the image and display it in pictureBox5
+                Bitmap bitmap = new Bitmap(imagePath);
+                pictureBox5.Image = bitmap;
+                pictureBox5.SizeMode = PictureBoxSizeMode.StretchImage;
+                
+                // Make sure the picture box is visible
+                pictureBox5.Visible = true;
+                labelCameraInspection.Visible = false;
+                
+                // Set up the layout
+                tableLayoutPanel9.RowCount = 1;
+                pictureBox5.Dock = DockStyle.Fill;
+                pictureBox5.Margin = new Padding(0);
+                pictureBox5.Padding = new Padding(0);
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMsg($"Error displaying debug image: {ex.Message}", 0);
+            }
         }
 
         private void MoveToFrame()
@@ -903,7 +951,7 @@ namespace WindowsFormsApp1
 
                     if (imgBox == null || resultLbl == null || parrot == null || innerTable == null) { index++; continue; }
 
-                    var item = kv.Value.FirstOrDefault();
+                    var item = value;
                     if (item == null) { index++; continue; }
 
                     var fileImage = _fileUtils.GetLatestImage();
@@ -1311,6 +1359,13 @@ namespace WindowsFormsApp1
         private void materialButton1_Click(object sender, EventArgs e)
         {
             _ctx.Trigger = "PLC_READ_RECEIVED";
+        }
+
+        private void cameraToolStripMenuItem_Click_1(object sender, EventArgs e)
+        {
+            var cameraDebugForm = new CameraDebugForm();
+
+            cameraDebugForm.Show();
         }
     }
 }
