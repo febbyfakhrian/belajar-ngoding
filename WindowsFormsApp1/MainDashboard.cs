@@ -104,6 +104,7 @@ namespace WindowsFormsApp1
 
         private async void Form1_Load(object sender, EventArgs e)
         {
+
             // UI perf improvements
             TryEnableDoubleBuffer(tableLayoutPanel9);
 
@@ -114,8 +115,19 @@ namespace WindowsFormsApp1
 
             showSidebarBtn.Visible = true;
             showSidebarBtn.BringToFront();
+            System.Diagnostics.Debug.WriteLine($"crownMenuStrip1: items={crownMenuStrip1?.Items.Count}");
+            foreach (ToolStripItem it in crownMenuStrip1.Items) System.Diagnostics.Debug.WriteLine($" - item: '{it.Text}' bounds={it.Bounds}");
+            SetupCustomHeaderAndMenu();
         }
+        //private void SetupCustomHeaderAndMenu()
+        //{
+        //    ApplyVisualStudioDarkTheme();
+        //    ApplyVisualStudioMenuTemplate();  // <--- baru
+        //    CreateWindowButtons();
+        //    UpdateMaximizeIcon();
 
+        //    // ...
+        //}
         private async void OnFormClosing(object sender, FormClosingEventArgs e)
         {
             // Stop timers
@@ -1367,5 +1379,6 @@ namespace WindowsFormsApp1
 
             cameraDebugForm.Show();
         }
+
     }
 }
