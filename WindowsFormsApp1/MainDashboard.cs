@@ -104,7 +104,10 @@ namespace WindowsFormsApp1
 
         private async void Form1_Load(object sender, EventArgs e)
         {
-
+            if (tableLayoutPanel2 != null)
+            {
+                tableLayoutPanel2.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
+            }
             // UI perf improvements
             TryEnableDoubleBuffer(tableLayoutPanel9);
 
@@ -116,8 +119,32 @@ namespace WindowsFormsApp1
             showSidebarBtn.Visible = true;
             showSidebarBtn.BringToFront();
             System.Diagnostics.Debug.WriteLine($"crownMenuStrip1: items={crownMenuStrip1?.Items.Count}");
-            foreach (ToolStripItem it in crownMenuStrip1.Items) System.Diagnostics.Debug.WriteLine($" - item: '{it.Text}' bounds={it.Bounds}");
+            //foreach (ToolStripItem it in crownMenuStrip1.Items) System.Diagnostics.Debug.WriteLine($" - item: '{it.Text}' bounds={it.Bounds}");
             SetupCustomHeaderAndMenu();
+            if (tableLayoutPanel1 != null)
+            {
+                // jangan dock Bottom, tapi Fill
+                tableLayoutPanel1.Dock = DockStyle.Fill;
+
+                // kalau ada 2 baris, baris 0 kita buat tinggi 0 px
+                if (tableLayoutPanel1.RowCount >= 2)
+                {
+                    tableLayoutPanel1.RowStyles[0].SizeType = SizeType.Absolute;
+                    tableLayoutPanel1.RowStyles[0].Height = 0;
+                }
+            }
+            if (panel1 != null)
+            {
+                panel1.Margin = Padding.Empty;
+                panel1.Padding = Padding.Empty;
+            }
+
+            if (tableLayoutPanel1 != null)
+            {
+                tableLayoutPanel1.Margin = Padding.Empty;
+                tableLayoutPanel1.Padding = Padding.Empty;
+            }
+
         }
         //private void SetupCustomHeaderAndMenu()
         //{
@@ -128,6 +155,7 @@ namespace WindowsFormsApp1
 
         //    // ...
         //}
+      
         private async void OnFormClosing(object sender, FormClosingEventArgs e)
         {
             // Stop timers

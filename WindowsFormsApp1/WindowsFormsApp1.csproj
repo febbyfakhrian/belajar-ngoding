@@ -426,6 +426,15 @@
     <Compile Include="Infrastructure\Services\ImageDbOperation.cs" />
     <Compile Include="Infrastructure\Services\InspectionLogger.cs" />
     <Compile Include="Infrastructure\Services\RunDagExtensions.cs" />
+    <Compile Include="InspectionConfig.cs" />
+    <Compile Include="InspectionConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="InspectionConfigManager.cs" />
+    <Compile Include="InspectionEngine.cs" />
+    <Compile Include="InspectionStepEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="MainDashboard.CustomTitlebar.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -543,6 +552,9 @@
     <Compile Include="Presentation\ViewModels\BaseViewModel.cs" />
     <Compile Include="Presentation\ViewModels\SettingsViewModel.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ProjectSelectorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultDTO.cs" />
     <Compile Include="Core\Common\Helpers\VideoGrabber.cs" />
