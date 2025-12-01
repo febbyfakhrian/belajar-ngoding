@@ -29,6 +29,9 @@ using WindowsFormsApp1.Infrastructure.Di;
 using WindowsFormsApp1.Infrastructure.Data;
 using WindowsFormsApp1.Infrastructure.Services;
 using WindowsFormsApp1.Presentation.Forms;
+using WindowsFormsApp1.Forms;
+using WindowsFormsApp1.Inspection;
+using System.Diagnostics;
 
 namespace WindowsFormsApp1
 {
@@ -1407,6 +1410,105 @@ namespace WindowsFormsApp1
 
             cameraDebugForm.Show();
         }
+        private void configureProjectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var configForm = new InspectionConfigForm();
+                configForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening configuration: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
+        // Event handler untuk menu Inspection → Run Inspection
+        private void runInspectionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Load project selector
+                var projects = InspectionConfigManager.GetAllProjects();
+
+                if (projects.Count == 0)
+                {
+                    MessageBox.Show("No inspection project found. Please create one first.",
+                        "No Project", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var selector = new ProjectSelectorForm(projects))
+                {
+                    if (selector.ShowDialog() == DialogResult.OK)
+                    {
+                        var project = InspectionConfigManager.LoadProject(selector.SelectedFileName);
+
+                        if (project != null)
+                        {
+                            RunInspection(project);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error running inspection: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Method untuk run inspection
+        private async void RunInspection(InspectionProject project)
+        {
+            try
+            {
+                // TODO: Get image from camera atau file
+                // Untuk demo, gunakan dummy image
+                Bitmap testImage = new Bitmap(640, 480);
+                using (Graphics g = Graphics.FromImage(testImage))
+                {
+                    g.Clear(Color.Gray);
+                    g.DrawString("Test Image", new Font("Arial", 24), Brushes.White, 100, 200);
+                }
+
+                // Create engine
+                var engine = new InspectionEngine(project);
+
+                // Subscribe to events
+                engine.ProgressChanged += (s, e) =>
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        // Update UI with progress
+                        Debug.WriteLine($"Progress: {e.Message} ({e.ProgressPercentage}%)");
+                    }));
+                };
+
+                // Execute inspection
+                var result = await engine.ExecuteInspectionAsync(testImage);
+
+                // Show result
+                string resultMessage = $"Inspection Result:\n\n" +
+                                     $"Project: {result.ProjectName}\n" +
+                                     $"Overall: {(result.OverallPassed ? "PASSED ✓" : "FAILED ✗")}\n" +
+                                     $"Steps Executed: {result.StepResults.Count}\n" +
+                                     $"Processing Time: {result.TotalProcessingTimeMs:F2} ms\n\n" +
+                                     $"{result.ResultSummary}";
+
+                MessageBox.Show(resultMessage, "Inspection Complete",
+                    MessageBoxButtons.OK,
+                    result.OverallPassed ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+
+                // Save result
+                InspectionConfigManager.SaveResult(result);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error during inspection: {ex.Message}",
+                    "Inspection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }

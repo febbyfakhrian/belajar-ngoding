@@ -426,13 +426,13 @@
     <Compile Include="Infrastructure\Services\ImageDbOperation.cs" />
     <Compile Include="Infrastructure\Services\InspectionLogger.cs" />
     <Compile Include="Infrastructure\Services\RunDagExtensions.cs" />
-    <Compile Include="InspectionConfig.cs" />
-    <Compile Include="InspectionConfigForm.cs">
+    <Compile Include="Inspection\InspectionConfig.cs" />
+    <Compile Include="Forms\InspectionConfigForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="InspectionConfigManager.cs" />
-    <Compile Include="InspectionEngine.cs" />
-    <Compile Include="InspectionStepEditorForm.cs">
+    <Compile Include="Inspection\InspectionConfigManager.cs" />
+    <Compile Include="Inspection\InspectionEngine.cs" />
+    <Compile Include="Forms\InspectionStepEditorForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainDashboard.CustomTitlebar.cs">
@@ -552,7 +552,7 @@
     <Compile Include="Presentation\ViewModels\BaseViewModel.cs" />
     <Compile Include="Presentation\ViewModels\SettingsViewModel.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="ProjectSelectorForm.cs">
+    <Compile Include="Forms\ProjectSelectorForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />

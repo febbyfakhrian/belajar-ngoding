@@ -224,7 +224,7 @@ namespace WindowsFormsApp1.Forms
             txtExpected.Tag = "LabelOcr_ExpectedText";
 
             AddConfigLabel("Min Confidence:", 10, ref y);
-            var numConf = AddConfigNumeric(150, y - 20, 0, 1, 0.01, (double)EditedStep.LabelOcrConfig.MinConfidence);
+            var numConf = AddConfigNumeric(150, y - 20, 0, 1, 0.01m, (decimal)EditedStep.LabelOcrConfig.MinConfidence);
             numConf.Tag = "LabelOcr_MinConfidence";
             numConf.DecimalPlaces = 2;
 
@@ -361,17 +361,17 @@ namespace WindowsFormsApp1.Forms
             y += 20;
 
             AddConfigLabel("Expected Value:", 10, ref y);
-            var numExp = AddConfigNumeric(180, y - 20, 0, 10000, 0.1, (decimal)EditedStep.MeasurementConfig.ExpectedValue);
+            var numExp = AddConfigNumeric(180, y - 20, 0, 10000, 0.1m, (decimal)EditedStep.MeasurementConfig.ExpectedValue);
             numExp.Tag = "Measurement_Expected";
             numExp.DecimalPlaces = 2;
 
             AddConfigLabel("Min:", 10, ref y);
-            var numMin = AddConfigNumeric(80, y - 20, 0, 10000, 0.1, (decimal)EditedStep.MeasurementConfig.MinValue);
+            var numMin = AddConfigNumeric(80, y - 20, 0, 10000, 0.1m, (decimal)EditedStep.MeasurementConfig.MinValue);
             numMin.Tag = "Measurement_Min";
             numMin.DecimalPlaces = 2;
 
             AddConfigLabel("Max:", 250, y - 20);
-            var numMax = AddConfigNumeric(300, y - 20, 0, 10000, 0.1, (decimal)EditedStep.MeasurementConfig.MaxValue);
+            var numMax = AddConfigNumeric(300, y - 20, 0, 10000, 0.1m, (decimal)EditedStep.MeasurementConfig.MaxValue);
             numMax.Tag = "Measurement_Max";
             numMax.DecimalPlaces = 2;
         }
